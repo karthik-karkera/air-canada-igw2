@@ -1,0 +1,5 @@
+/node_modules
+/daemon
+/logs/*
+/.env
+/config/JIRA.json
