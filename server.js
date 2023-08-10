@@ -22,6 +22,7 @@ function startServer()
     const SECURE_PORT = process.env.SECURE_PORT || 8443;
     const secureserver = https.createServer(secure_options,app);
     secureserver.listen(SECURE_PORT);
+    secureserver.timeout= 600000;
     logger.info(constants.START_SERVER_MSG);
 }  
 

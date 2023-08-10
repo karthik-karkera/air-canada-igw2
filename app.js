@@ -52,7 +52,7 @@ app.use(cookieParser());
 // app.use('/ase/api/job', require('./src/ase/routes/job'));
 // app.use('/ase/api/issue', require('./src/ase/routes/issue'));
 // app.use('/ase/api/application', require('./src/ase/routes/application'));
-app.use('/ase/api/igw', require('./src/igw/routes/igw'));
+app.use('/api/igw', require('./src/igw/routes/igw'));
 require('./src/utils/swagger')(app);
 
 logger.info(constants.SWAGGER_PAGE_URL+` https://`+hostname+`:`+process.env.SECURE_PORT+constants.SWAGGER_CONTEXT_URL); 

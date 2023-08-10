@@ -21,7 +21,7 @@ methods.getIssueDetails = async (appId, issueId, token) => {
     var result = await util.httpCall("GET", token, url);
     var issue = result.data;
     if(result.code === 200){
-        var attributesArray = (issue.attributeCollection.attributeArray) ? (issue.attributeCollection.attributeArray) : [];
+        var attributesArray = (issue?.attributeCollection?.attributeArray) ? (issue?.attributeCollection?.attributeArray) : [];
         var attribute = {};
         for(var i=0; i<attributesArray.length; i++){
             if((attributesArray[i].value).length > 0)
@@ -30,7 +30,6 @@ methods.getIssueDetails = async (appId, issueId, token) => {
         delete issue["attributeCollection"];
         result.data = Object.assign(issue, attribute);
     }
-
     return result;
 }
 

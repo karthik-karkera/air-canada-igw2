@@ -4,13 +4,14 @@ const constants = require("../../utils/constants");
 var methods = {};
 
 methods.getScanJobDetails = async (jobId, token) => {
-    const url = constants.ASE_SCAN_DETAILS.replace("{JOBID}", jobId);
+    const url = constants.ASOC_SCAN_DETAILS.replace("{SCANID}", jobId);
     return await util.httpCall("GET", token, url);
 };
 
 methods.searchJobs = async (queryString, token) => {
-    const url = constants.ASE_JOB_SEARCH+"?queryString="+queryString;
-    return await util.httpCall("GET", token, url);  
+    const url = queryString;
+    let result = await util.httpCall("GET", token, url); 
+    return result;
 };
 
 module.exports = methods;

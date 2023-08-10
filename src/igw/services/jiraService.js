@@ -16,21 +16,19 @@ methods.createTickets = async (issues, imConfigObject) => {
     var output = {};
     var success = [];
     var failures = [];
-
     for (var i=0; i<issues.length; i++){
-        const imPayload = await createPayload(issues[i], imConfigObject);
-
+        const imPayload = await createPayload(issues[i], imConfigObject); //LAST
         try {
-            var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+cryptoService.decrypt(imConfigObject.imPassword));
+            // var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+cryptoService.decrypt(imConfigObject.imPassword));
+            var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+imConfigObject.imPassword);
             const imConfig = getConfig("POST", basicToken, imConfigObject.imurl+constants.JIRA_CREATE_TICKET, imPayload);
             const result = await util.httpImCall(imConfig); 
-
             if (result.code === 201){
                 const imTikcket = imConfigObject.imurl+"/browse/"+result.data.key;
-                success.push({issueId: issues[i]["id"], ticket: imTikcket});
+                process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({issueId: issues[i]["Id"], ticket: imTikcket}) : success.push({issueId: issues[i]["id"], ticket: imTikcket});
             }
             else {
-                failures.push({issueId: issues[i]["id"], errorCode: result.code, errorMsg: result.data});
+                process.env.APPSCAN_PROVIDER == "ASOC" ? failures.push({issueId: issues[i]["Id"], errorCode: result.code, errorMsg: result.data}) : failures.push({issueId: issues[i]["id"], errorCode: result.code, errorMsg: result.data});
                 logger.error(`Failed to create ticket for issue Id ${issues[i]["id"]} and the error is ${result.data}`);
             }
         } catch (error) {
@@ -48,19 +46,22 @@ createPayload = async (issue, imConfigObject) => {
     var attrMap = {};
     attrMap["project"] = {"key" : imConfigObject.improjectkey};
     attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
-    attrMap["priority"] = {"name" : imConfigObject.severitymap[issue["Severity"]]};
-    attrMap["summary"] = "Security issue: "+issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
+    if(process.env.APPSCAN_PROVIDER == "ASOC"){
+        attrMap["summary"] = "Security issue: "+ issue["IssueType"] + " found by AppScan";
+    }else{
+        attrMap["summary"] = "Security issue: "+ issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
+    }
     attrMap["description"] = JSON.stringify(issue, null, 4);
 
     const attributeMappings = typeof imConfigObject.attributeMappings != 'undefined' ? imConfigObject.attributeMappings : [];
-
+ 
     for(var i=0; i<attributeMappings.length; i++) {
         if(attributeMappings[i].type === 'Array')
             attrMap[attributeMappings[i].imAttr] = [issue[attributeMappings[i].appScanAttr]];
         else
             attrMap[attributeMappings[i].imAttr] = issue[attributeMappings[i].appScanAttr];    
     }
-
+    
     payload["fields"] = attrMap;
     return payload;
 }
@@ -69,7 +70,8 @@ methods.attachIssueDataFile = async (ticket, filePath, imConfigObject) => {
     const url = imConfigObject.imurl+constants.JIRA_ATTACH_FILE.replace("{JIRAID}",ticket);
     const formData = new FormData();
     formData.append('file', require("fs").createReadStream(filePath)); 
-    var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+cryptoService.decrypt(imConfigObject.imPassword));
+    let userData = imConfigObject.imUserName +":"+imConfigObject.imPassword;
+    var basicToken = `Basic ${Buffer.from(userData).toString('base64')}`;
     const imConfig = getConfig("POST", basicToken, url, formData);
     return await util.httpImCall(imConfig); 
 }   
@@ -82,6 +84,7 @@ getConfig = function(method, token, url, data) {
         rejectUnauthorized: false,        
         headers: {
             'Authorization': token, 
+            'Accept': 'application/json',
             'Content-Type': 'application/json',
             'X-Atlassian-Token': 'nocheck'
         }

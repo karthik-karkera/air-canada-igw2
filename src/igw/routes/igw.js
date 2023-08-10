@@ -288,7 +288,7 @@ router.get('/sync/results', tokenValidation.validateToken, igwController.getResu
  *         name: appid
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     responses:
  *       200:
  *         description: Ok

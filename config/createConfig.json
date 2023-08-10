@@ -1,0 +1,23 @@
+{
+    "Configuration": {
+      "Summary": true,
+      "Details": true,
+      "Discussion": true,
+      "Overview": true,
+      "TableOfContent": true,
+      "Advisories": true,
+      "FixRecommendation": true,
+      "History": true,
+      "Coverage": true,
+      "MinimizeDetails": true,
+      "Articles": true,
+      "ReportFileType": "Html",
+      "Title": "string",
+      "Notes": "string",
+      "Locale": "string"
+    },
+    "ApplyPolicies": "None",
+    "SelectPolicyIds": [
+    "00000000-0000-0000-0000-000000000000"
+    ]
+  }

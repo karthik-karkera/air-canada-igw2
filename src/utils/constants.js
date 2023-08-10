@@ -3,8 +3,8 @@ var constants = {
 	LOG_LEVEL: "debug",
 	LOG_APPENDER1: "out",
 	LOG_APPENDER2: "app",
-	CONTEXT_URL: "/ase/api",
-	SWAGGER_CONTEXT_URL: "/ase/api/swagger",
+	CONTEXT_URL: "/api",
+	SWAGGER_CONTEXT_URL: "/api/swagger",
 	SWAGGER_PAGE_URL: "Swagger page URL is - ",
 	START_SERVER_MSG: "Server started.....",
 	AUTH_TOKEN: "auth-token",
@@ -24,10 +24,47 @@ var constants = {
 	ASE_GET_HTML_ISSUE_DETAILS: "/api/issues/details_v2?appId={APPID}&ids=[\"{ISSUEID}\"]",
 	ASE_JOB_SEARCH: "/api/jobs/search",
 
+	//ASOC APIs
+	ASOC_API_KEYLOGIN: "/api/V2/Account/ApiKeyLogin",
+	// ASOC_JOB_SEARCH: "/api/v2/Reports",
+	ASOC_JOB_SEARCH: '/api/v2/Scans/GetAsPageMin?%24top=200&%24orderby=LastModified&%24expand=LatestExecution&%24inlinecount=allpages',
+	ASOC_ISSUES_APPLICATION: "/api/v2/Issues/Application/{APPID}",
+	ASOC_APPLICATION_DETAILS: "/api/V2/Apps/{APPID}",
+	ASOC_ISSUE_DETAILS: "/api/V2/Issues/{ISSUEID}",
+	ASOC_UPDATE_ISSUE: "/api/V2/Issues/{ISSUEID}",
+	ASOC_CREATE_HTML_ISSUE_DETAILS: "/api/v2/Reports/Security/Application/{APPID}",
+	ASOC_REPORT_STATUS: "/api/V2/Reports/{REPORTID}",
+	ASOC_GET_HTML_ISSUE_DETAILS: "/api/v2/Reports/Download/{REPORTID}",
+	ASOC_SCAN_DETAILS: "/api/v2/Issues/Scan/{SCANID}",
+	// ASOC_CREATE_HTML_SCAN_DETAILS: "/api/v2/Reports/Security/Scan/{SCANID}",
+	CREATE_REPORT_REQUEST_CONFIGURATION : {
+		"Configuration": {
+		  "Summary": true,
+		  "Details": true,
+		  "Discussion": true,
+		  "Overview": true,
+		  "TableOfContent": true,
+		  "Advisories": true,
+		  "FixRecommendation": true,
+		  "History": true,
+		  "Coverage": true,
+		  "MinimizeDetails": true,
+		  "Articles": true,
+		  "ReportFileType": "html",
+		},
+		"OdataFilter": "",
+		"ApplyPolicies": "None",
+		"SelectPolicyIds": [
+		  "00000000-0000-0000-0000-000000000000"
+		]
+	  },
+	// ASOC_GET_HTML_ISSUE_DETAILS: "api/v2/Reports/Security/Application/{APPID}"
+
 	//JIRA APIs
 	JIRA_PING_API: "/rest/api/latest/mypermissions",
 	JIRA_ATTACH_FILE: "/rest/api/latest/issue/{JIRAID}/attachments",
-	JIRA_CREATE_TICKET: "/rest/api/latest/issue",
+	// JIRA_CREATE_TICKET: "/rest/api/latest/issue",
+	JIRA_CREATE_TICKET: "/rest/api/2/issue",
 
 	INVALID_ADMIN_EMAIL: "Invalid admin email",
 	INVALID_ADMIN_PASSWORD: "Invalid admin password",

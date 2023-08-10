@@ -4,12 +4,14 @@ const jsonwebtoken = require("../../utils/jsonwebtoken");
 const constants = require("../../utils/constants");
 const igwService = require("../services/igwService");
 const issueService = require("../../ase/service/issueService");
+const asocIssueService = require("../../asoc/service/issueService");
 const imConfigService = require("../services/imConfigService");
 const global = require('../../utils/global');
 var crypto = require('crypto'); 
 const fs = require('fs');
 var CronJob = require('cron').CronJob;
 const jobService = require('../../ase/service/jobService');
+const asocJobService = require('../../asoc/service/jobService')
 
 var methods = {};
 
@@ -129,20 +131,26 @@ methods.stopSync = async (req, res) => {
 }
 
 const aseLoginController = async () => {
-    var aseToken;
+    var token;
     try {
-        aseToken = await igwService.aseLogin();
-        if (typeof aseToken === 'undefined') logger.error(`Failed to login to the AppScan.`);
+        if(process.env.APPSCAN_PROVIDER == 'ASE'){
+            token = await igwService.aseLogin();
+            if (typeof token === 'undefined') logger.error(`Failed to login to the AppScan.`);
+        }
+        else if(process.env.APPSCAN_PROVIDER == 'ASOC'){
+            token = await igwService.asocLogin();
+            if (typeof token === 'undefined') logger.error(`Failed to login to the AppScan.`);
+        }
     } catch (error) {
         logger.error(`Login to AppScan failed with the error ${error}`);
     }
-    return aseToken;
+    return token;
 }
 
-getCompletedScans = async(period, aseToken) => {
+getCompletedScans = async(period, token) => {
     var completedScans;
     try {
-        const result = await igwService.getCompletedScans(period, aseToken); 
+        const result = await igwService.getCompletedScans(period, token); 
         if (result.code < 200 || result.code > 299) logger.error(`Failed to fetch completed scans. ${result.data}`);
         else {
             completedScans = (result.data) ? result.data: [];
@@ -155,21 +163,29 @@ getCompletedScans = async(period, aseToken) => {
 }
 
 startCron = async (providerId, syncinterval) => {
-    const aseToken = await aseLoginController();
-    if (typeof aseToken === 'undefined') return;
+    const token = await aseLoginController();
+    if (typeof token === 'undefined') return;
 
-    const completedScans = await getCompletedScans(syncinterval, aseToken);
+    const completedScans = await getCompletedScans(syncinterval, token);
     if (typeof completedScans === 'undefined') return;
-
     const output = [];
     try {
         for(var i=0; i<completedScans.length; i++) {
-            const scan = completedScans[i];
-            if (scan.applicationId){
-                const issuesData = await pushIssuesOfScan(scan.id, scan.applicationId, aseToken, providerId);
-                if (typeof issuesData != 'undefined') output.push(issuesData);
-            } 
-            else logger.info(`Scan ${scan.id} is not associated with the application. Issues of this application cannot be pushed to Issue Management System`);        
+                const scan = completedScans[i];
+            
+            if(process.env.APPSCAN_PROVIDER == 'ASOC'){
+                if (scan.AppId){
+                    const issuesData = await pushIssuesOfScan(scan.Id, scan.AppId, token, providerId);
+                    if (typeof issuesData != 'undefined') output.push(issuesData);
+                } 
+                else logger.info(`Scan ${scan.id} is not associated with the application. Issues of this application cannot be pushed to Issue Management System`);        
+            }else if(process.env.APPSCAN_PROVIDER == 'ASE'){
+                if (scan.applicationId){
+                    const issuesData = await pushIssuesOfScan(scan.id, scan.applicationId, token, providerId);
+                    if (typeof issuesData != 'undefined') output.push(issuesData);
+                } 
+                else logger.info(`Scan ${scan.id} is not associated with the application. Issues of this application cannot be pushed to Issue Management System`);        
+            }
         }
         jobResults.set(providerId, output);
         logger.info(JSON.stringify(output, null, 4));        
@@ -190,10 +206,10 @@ methods.getResults = async (req, res) => {
         return res.status(404).send(`Results for the provider ${providerId} is not found`);
 }
 
-getIssuesOfApplication = async (applicationId, aseToken) => {
+getIssuesOfApplication = async (applicationId, token) => {
     var issues = [];
     try {
-        const result = await issueService.getIssuesOfApplication(applicationId, aseToken);
+        const result = process.env.APPSCAN_PROVIDER == 'ASE' ? await issueService.getIssuesOfApplication(applicationId, token) : await asocIssueService.getIssuesOfApplication(applicationId, token);
         if(result.code === 200) issues = result.data;        
         else logger.error(`Failed to get issues of application ${applicationId}`);
     } catch (error) {
@@ -203,15 +219,20 @@ getIssuesOfApplication = async (applicationId, aseToken) => {
 }
 
 methods.pushJobForScan = async (req, res) => {
-    const aseToken = await aseLoginController();
-    if (typeof aseToken === 'undefined') return res.status(400).send(`Failed to login to the ASE.`);
+    const token = await aseLoginController();
+    if (typeof token === 'undefined') return res.status(400).send(`Failed to login to the ASE.`);
     const scanId = req.params.jobid;
-    const result = await jobService.getScanJobDetails(scanId, aseToken);
+    try{
+        var result = process.env.APPSCAN_PROVIDER == 'ASE' ? await jobService.getScanJobDetails(scanId, token) : await asocJobService.getScanJobDetails(scanId, token);
+    }catch(error){
+        logger.error('Wrong scan Id or you do not have access permission to the containing application.');
+        return res.status(401).send('Wrong scan Id or you do not have access permission to the containing application.')
+    }
     if (result.code === 200) {
         const data = result.data;
-        const applicationId = data.applicationId;
+        const applicationId = process.env.APPSCAN_PROVIDER == 'ASE' ? data.applicationId : data?.Items[0]?.ApplicationId;
         if (typeof applicationId != 'undefined'){
-            const output = await pushIssuesOfScan(scanId, applicationId, aseToken, process.env.IM_PROVIDER);
+            const output = await pushIssuesOfScan(scanId, applicationId, token, process.env.IM_PROVIDER);
             logger.info(JSON.stringify(output, null, 4));
             return res.status(200).json(output);
         }
@@ -225,29 +246,37 @@ methods.pushJobForScan = async (req, res) => {
 }
 
 methods.pushJobForApplication = async (req, res) => {
-    const aseToken = await aseLoginController();
-    if (typeof aseToken === 'undefined') return res.status(400).send(`Failed to login to the ASE.`);
+    const token = await aseLoginController();
+    if (typeof token === 'undefined') return res.status(400).send(`Failed to login to the ASE.`);
     const applicationId = req.params.appid;
-    const output = await pushIssuesOfApplication(applicationId, aseToken, process.env.IM_PROVIDER);
+    const output = await pushIssuesOfApplication(applicationId, token, process.env.IM_PROVIDER);
     logger.info(JSON.stringify(output, null, 4));
     return res.status(200).json(output);
+    return res.write(output)
 }
 
 
-pushIssuesOfScan = async (scanId, applicationId, aseToken, providerId) => {
-    const appIssues = await getIssuesOfApplication(applicationId, aseToken);
-    const scanIssues = appIssues.filter(issue => issue["Scan Name"].replaceAll("&#40;", "(").replaceAll("&#41;", ")").includes("("+scanId+")"));
-    logger.info(`${scanIssues.length} issues found in the scan ${scanId} and the scan is associated to the application ${applicationId}`);
-    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, scanIssues, aseToken);
+pushIssuesOfScan = async (scanId, applicationId, token, providerId) => {
+    var appIssues = await getIssuesOfApplication(applicationId, token);
+    if(process.env.APPSCAN_PROVIDER == "ASOC"){
+        appIssues = appIssues.Items 
+    }
+    const scanIssues = process.env.APPSCAN_PROVIDER == 'ASE' ? appIssues.filter(issue => issue["Scan Name"].replaceAll("&#40;", "(").replaceAll("&#41;", ")").includes("("+scanId+")")) : appIssues.filter(issue => issue["ScanName"] != undefined);
+    logger.info(`${appIssues.length} issues found in the scan ${scanId} and the scan is associated to the application ${applicationId}`);
+    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, scanIssues, token);
     pushedIssuesResult["scanId"]=scanId;
     pushedIssuesResult["syncTime"]=new Date();
     return pushedIssuesResult;
 }
 
-pushIssuesOfApplication = async (applicationId, aseToken, providerId) => {
-    const issues = await getIssuesOfApplication(applicationId, aseToken);
+pushIssuesOfApplication = async (applicationId, token, providerId) => {
+    var issues = await getIssuesOfApplication(applicationId, token);
+    if(process.env.APPSCAN_PROVIDER == "ASOC"){
+        issues = issues.Items 
+    }
     logger.info(`${issues.length} issues found in the application ${applicationId}`);
-    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, issues, aseToken);
+    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, issues, token);
+
     pushedIssuesResult["applicationId"]=applicationId;
     pushedIssuesResult["syncTime"]=new Date();
     return pushedIssuesResult;
@@ -264,36 +293,40 @@ createImTickets = async (filteredIssues, imConfig, providerId) => {
     return result;
 }
 
-pushIssuesToIm = async (providerId, applicationId, issues, aseToken) => {
+pushIssuesToIm = async (providerId, applicationId, issues, token) => {
     var imConfig = await getIMConfig(providerId);
     if(typeof imConfig === 'undefined') return;
-
     const filteredIssues = await igwService.filterIssues(issues, imConfig);
     logger.info(`Issues count after filtering is ${filteredIssues.length}`);
-
     const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId);
-    
     const successArray = (typeof imTicketsResult.success === 'undefined') ? [] : imTicketsResult.success;
-    for(var j=0; j<successArray.length; j++){
+    for(let j=0; j<successArray.length; j++){
         const issueObj = successArray[j];
         const issueId = issueObj.issueId;
         const imTicket = issueObj.ticket;
-
         try {
-            await updateExternalId(applicationId, issueId, imTicket, aseToken);  
+            await updateExternalId(applicationId, issueId, imTicket, token);  
         } catch (error) {
             logger.error("Could not update the external Id of the issue for a ticket "+ error);
             issueObj["updateExternalIdError"] = error;
         }
-
-        const downloadPath = `./temp/${applicationId}_${issueId}.zip`;
-        try {
-            await issueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, aseToken);
-        } catch (error) {
-            logger.error(`Downloading HTML file having issue details failed for the issueId ${issueId} with an error ${error}`);
-            issueObj["attachIssueDataFileError"] = error;
+        if(process.env.APPSCAN_PROVIDER == "ASOC"){
+            var downloadPath = `./temp/${applicationId}_${issueId}.html`;
+        }else if(process.env.APPSCAN_PROVIDER == "ASE"){
+            var downloadPath = `./temp/${applicationId}_${issueId}.zip`;
         }
-
+        if(process.env.GENERATE_HTML_FILE_JIRA == "true"){
+            try {
+                process.env.APPSCAN_PROVIDER == 'ASE' ? await issueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, token) : await asocIssueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, token);
+                // if(process.env.APPSCAN_PROVIDER == 'ASOC'){
+                //   await asocIssueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, token);
+                // }
+            } catch (error) {
+                logger.error(`Downloading HTML file having issue details failed for the issueId ${issueId} with an error ${error}`);
+                issueObj["attachIssueDataFileError"] = error;
+            }
+        }
+        
         try {
             if (require("fs").existsSync(downloadPath)) await igwService.attachIssueDataFile(imTicket, downloadPath, imConfig, providerId);
         } catch (error) {
@@ -307,14 +340,13 @@ pushIssuesToIm = async (providerId, applicationId, issues, aseToken) => {
             logger.error(`Deleting the html data file for the issueId ${issueId} attached to ticket ${imTicket} failed with an error ${error}`);
         }
     }
-
     return imTicketsResult;
 }
 
-getIssueDetails = async (applicationId, issueId, aseToken) => {
+getIssueDetails = async (applicationId, issueId, token) => {
     var issueData;
     try {
-        const issueResults = await issueService.getIssueDetails(applicationId, issueId, aseToken);  
+        const issueResults = process.env.APPSCAN_PROVIDER == 'ASE' ? await issueService.getIssueDetails(applicationId, issueId, token) : await asocIssueService.getIssueDetails(applicationId, issueId, token);  
         if (issueResults.code === 200 && issueResults.data !=='undefined') 
             issueData = issueResults.data;
         else
@@ -325,25 +357,28 @@ getIssueDetails = async (applicationId, issueId, aseToken) => {
     return issueData;
 }
 
-updateIssueAttribute = async (issueId, data, aseToken, etag) => {
+updateIssueAttribute = async (issueId, data, token, etag) => {
     var updateSuccessful = false;
     try {
-        const updateResult = await issueService.updateIssue(issueId, data, aseToken, etag);    
-        if(updateResult.code != 200)
-            logger.error(`Updating attribute of issue ${issue} failed with error ${updateResult.data}`);
-        else 
+        const updateResult = process.env.APPSCAN_PROVIDER == 'ASE' ? await issueService.updateIssue(issueId, data, token, etag) : await asocIssueService.updateIssue(issueId, data, token, etag); 
+        if(updateResult.code == 200 || updateResult.code == 204){
             updateSuccessful = true;    
+        }
+        else {
+            updateSuccessful = false;
+            logger.error(`Updating attribute of issue ${issue} failed with error ${updateResult.data}`);
+        }
     } catch (error) {
         logger.error(`Updating attribute of issue ${issue} failed with error ${error}`);
     }
     return updateSuccessful;
 }
 
-updateExternalId = async (applicationId, issueId, ticket, aseToken) => {
-    const issueData = await getIssueDetails(applicationId, issueId, aseToken);
+updateExternalId = async (applicationId, issueId, ticket, token) => {
+    const issueData = await getIssueDetails(applicationId, issueId, token);
     if (typeof issueData === 'undefined') throw `Failed to fetch the details of issue ${issueId} from application ${applicationId}`;
-
     var data = {};
+    if(process.env.APPSCAN_PROVIDER == 'ASE'){
     data["lastUpdated"] = issueData.lastUpdated;
     data["appReleaseId"] = applicationId;
     var attributeArray = [];
@@ -354,7 +389,13 @@ updateExternalId = async (applicationId, issueId, ticket, aseToken) => {
     var attributeCollection = {};
     attributeCollection["attributeArray"] = attributeArray;
     data["attributeCollection"] = attributeCollection;
-    const isSuccess = await updateIssueAttribute(issueId, data, aseToken, issueData.etag);
+    }
+    else if(process.env.APPSCAN_PROVIDER == "ASOC"){
+        data["Status"] = issueData.Status == 'New' ? 'Open' : issueData.Status;
+        data["ExternalId"] = ticket;
+        data['Comment'] = ticket
+    }
+    const isSuccess = await updateIssueAttribute(issueId, data, token, issueData.etag);
     if(!isSuccess)
         throw `Failed to update the external Id for issue ${issueId} from application ${applicationId}`;
 }
