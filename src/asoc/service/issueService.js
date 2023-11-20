@@ -1,6 +1,6 @@
 const util = require("../../utils/util");
 const constants = require("../../utils/constants");
-
+const igwService = require('../../igw/services/igwService')
 var methods = {};
 
 
@@ -20,13 +20,13 @@ methods.getIssueDetails = async (appId, issueId, token) => {
     const url = constants.ASOC_ISSUE_DETAILS.replace("{ISSUEID}", issueId);
     var result = await util.httpCall("GET", token, url);
     var issue = result.data;
-    if(result.code === 200){
+    if (result.code === 200) {
         var attributesArray = (issue?.attributeCollection?.attributeArray) ? (issue?.attributeCollection?.attributeArray) : [];
         var attribute = {};
-        for(var i=0; i<attributesArray.length; i++){
-            if((attributesArray[i].value).length > 0)
+        for (var i = 0; i < attributesArray.length; i++) {
+            if ((attributesArray[i].value).length > 0)
                 attribute[attributesArray[i].name] = (attributesArray[i].value)[0];
-        }   
+        }
         delete issue["attributeCollection"];
         result.data = Object.assign(issue, attribute);
     }
@@ -38,36 +38,104 @@ methods.updateIssue = async (issueId, data, token, eTag) => {
     return await util.httpCall("PUT", token, url, JSON.stringify(data), eTag);
 }
 
-methods.getHTMLIssueDetails = async(appId, issueId, downloadPath, token) => {
+methods.getHTMLIssueDetails = async (appId, issueId, downloadPath, token) => {
     const createReportUrl = constants.ASOC_CREATE_HTML_ISSUE_DETAILS.replace("{APPID}", appId);
     const data = constants.CREATE_REPORT_REQUEST_CONFIGURATION; //CREATE ISSUE PAYLOAD
-    const OdataFilter = `Id eq '${issueId}'`;
-    data.OdataFilter = OdataFilter;
-    console.log(data, 'od')
+    // const OdataFilter = `Id eq '${issueId}'`;
+    // data.OdataFilter = OdataFilter;
 
-    let createIssue = await util.httpCall("POST", token, createReportUrl, data); //CREATE ISSUE REPORT
-    const reportID = await createIssue.data.Id;
-    console.log(reportID, issueId, 'url')
+    // COMMENT THIS
+    // let createIssue = await util.httpCall("POST", token, createReportUrl, data); //CREATE ISSUE REPORT
+    // console.log(createIssue.data.Id, 'creat ID')
+    // const reportID = await createIssue.data.Id;
+    // COMMENT END
+
+    const reportID = 'f5eb6475-abff-468f-a35e-ac63d234c5a5'
     const getDownloadReportsUrl = await constants.ASOC_GET_HTML_ISSUE_DETAILS.replace("{REPORTID}", reportID); //GET REPORT DOWNLOAD URL
     const getReportStatusUrl = await constants.ASOC_REPORT_STATUS.replace("{REPORTID}", reportID); //GET REPORT STATUS
-    
-    
-    async function checkReport(getReportStatusUrl){
-        let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
-        // if(getDownloadUrl.data.Status == 'Ready'){
-            return await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
-        // }else{
-            // setTimeout(() => checkReport(getReportStatusUrl), 4000)
-            // console.log(issueId, issueId)
-            // await timeout(3000);
-            // return checkReport(getReportStatusUrl)
-        // }
-    }
+    // --->>>
+    // async function checkReport(getReportStatusUrl){
+    //     let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
+    //     if(getDownloadUrl.data.Status == 'Ready'){
+    //         console.log('ready')
+    //         return await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
+    //     }else{
+    //         console.log('check if')
+    //         setTimeout(() => checkReport(getReportStatusUrl), 4000)
+    //         await timeout(3000);
+    //         return checkReport(getReportStatusUrl)
+    //     }
 
-    let a = await checkReport(getReportStatusUrl);
-    function timeout(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    // }
+
+    // let a = await checkReport(getReportStatusUrl);
+    // function timeout(ms) {
+    //     return new Promise(resolve => setTimeout(resolve, ms));
+    // }
+// --->>
+    let intervalid
+    async function testFunction() {
+        intervalid = setInterval(async () => {
+            // I use axios like: axios.get('/user?ID=12345').then
+            let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
+            // console.log('1 steppp')
+            if(getDownloadUrl.data.Status == 'Ready'){
+                // console.log('2 steppp')
+                clearInterval(intervalid)
+                return await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
+            }
+        }, 3000)
     }
+    // you can use this function like
+    await testFunction()
+    
 }
+
+methods.downloadAsocReport = async (providerId, appId, issues, token) => {
+    const createReportUrl = constants.ASOC_CREATE_HTML_ISSUE_DETAILS.replace("{APPID}", appId);
+    const data = constants.CREATE_REPORT_REQUEST_CONFIGURATION; //CREATE ISSUE PAYLOAD
+    // const OdataFilter = `Id eq '${issueId}'`;
+    // data.OdataFilter = OdataFilter;
+
+    // COMMENT THIS
+    
+    try{
+        console.log(data, createReportUrl)
+        let createIssue = await util.httpCall("POST", token, createReportUrl, data); //CREATE ISSUE REPORT;
+        var reportID = await createIssue?.code == 200 ? createIssue?.data?.Id : createIssue;
+    }catch(err){
+        logger.error(err)
+    }
+        
+
+    const getDownloadReportsUrl = await constants.ASOC_GET_HTML_ISSUE_DETAILS.replace("{REPORTID}", reportID); //GET REPORT DOWNLOAD URL
+    const getReportStatusUrl = await constants.ASOC_REPORT_STATUS.replace("{REPORTID}", reportID); //GET REPORT STATUS
+
+    var downloadPath = `./temp/${appId}.html`;
+    let intervalid;
+    async function testFunction() {
+        return new Promise(
+            function(resolve){
+                return intervalid = setInterval(async () => {
+                    let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
+                    if(getDownloadUrl.data.Status == 'Ready'){
+                        let downloadFileData = await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
+                        if(downloadFileData){
+                            // let res = await igwService.splitXmlFile(downloadPath, appId)
+                            console.log(downloadPath, appId)
+                            let res = await igwService.splitHtmlFile(downloadPath, appId)
+                            clearInterval(intervalid)
+                            resolve(res)
+                        }
+                    }
+                }, 3000)
+            }
+        )
+    }
+    // you can use this function like
+    let a = await testFunction();
+    return a;
+}
+
 
 module.exports = methods;

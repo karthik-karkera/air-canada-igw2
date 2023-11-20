@@ -8,7 +8,6 @@ methods.httpCall = async function(method, token, url, data, etag) {
       return await httpASECall(httpOptions);
     }else if(process.env.APPSCAN_PROVIDER == 'ASOC'){
       const httpOptions = httpASOCConfig(token, method, url, data, etag);
-      console.log(httpOptions)
       return await httpASOCCall(httpOptions);
     }
 }

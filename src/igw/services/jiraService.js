@@ -44,6 +44,8 @@ methods.createTickets = async (issues, imConfigObject) => {
 createPayload = async (issue, imConfigObject) => {
     var payload = {};
     var attrMap = {};
+    // let priority = imConfigObject.severitymap[issue["Severity"]] == 'Low' ? '4' : imConfigObject.severitymap[issue["Severity"]] == 'Medium' ? '3' : imConfigObject.severitymap[issue["Severity"]] == 'High' ? '2' : '1';
+    // console.log(priority, imConfigObject.severitymap[issue["Severity"]] )
     attrMap["project"] = {"key" : imConfigObject.improjectkey};
     attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
@@ -52,16 +54,18 @@ createPayload = async (issue, imConfigObject) => {
         attrMap["summary"] = "Security issue: "+ issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
     }
     attrMap["description"] = JSON.stringify(issue, null, 4);
-
+    // attrMap["customfield_10006"] = "TEST2-1001";
     const attributeMappings = typeof imConfigObject.attributeMappings != 'undefined' ? imConfigObject.attributeMappings : [];
  
     for(var i=0; i<attributeMappings.length; i++) {
-        if(attributeMappings[i].type === 'Array')
-            attrMap[attributeMappings[i].imAttr] = [issue[attributeMappings[i].appScanAttr]];
-        else
+        if(attributeMappings[i].type === 'Array'){
+            // let labelArray = issue[attributeMappings[i].appScanAttr].includes(',') ? issue[attributeMappings[i].appScanAttr].split(',') : issue[attributeMappings[i].appScanAttr];
+            attrMap[attributeMappings[i].imAttr] = [issue[attributeMappings[i].appScanAttr] || ''];
+        }
+        else{
             attrMap[attributeMappings[i].imAttr] = issue[attributeMappings[i].appScanAttr];    
+        }
     }
-    
     payload["fields"] = attrMap;
     return payload;
 }

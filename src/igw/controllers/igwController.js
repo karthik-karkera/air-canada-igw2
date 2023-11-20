@@ -11,7 +11,8 @@ var crypto = require('crypto');
 const fs = require('fs');
 var CronJob = require('cron').CronJob;
 const jobService = require('../../ase/service/jobService');
-const asocJobService = require('../../asoc/service/jobService')
+const asocJobService = require('../../asoc/service/jobService');
+const { error } = require("console");
 
 var methods = {};
 
@@ -68,7 +69,6 @@ methods.createConfig = (req, res) => {
 methods.getConfig = async (req, res) => {
     try {
         const imConfig = await imConfigService.getImConfigObject(req.params.providerid);
-
         if (imConfig && imConfig.length>0) return res.status(200).json(JSON.parse(imConfig));
         else {
             logger.error(`Failed to read the config for the provider ${req.params.providerId}`);
@@ -276,7 +276,6 @@ pushIssuesOfApplication = async (applicationId, token, providerId) => {
     }
     logger.info(`${issues.length} issues found in the application ${applicationId}`);
     const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, issues, token);
-
     pushedIssuesResult["applicationId"]=applicationId;
     pushedIssuesResult["syncTime"]=new Date();
     return pushedIssuesResult;
@@ -297,6 +296,16 @@ pushIssuesToIm = async (providerId, applicationId, issues, token) => {
     var imConfig = await getIMConfig(providerId);
     if(typeof imConfig === 'undefined') return;
     const filteredIssues = await igwService.filterIssues(issues, imConfig);
+
+    if(process.env.APPSCAN_PROVIDER == "ASOC" && filteredIssues.length > 0){
+        try{
+            await asocIssueService.downloadAsocReport(providerId, applicationId, issues, token)
+        }catch(err){
+            logger.error(`Downloading ASOC Reports for ${applicationId} failed with error - ${err}`)
+            // logger.error(err.message)
+        }
+    }
+    
     logger.info(`Issues count after filtering is ${filteredIssues.length}`);
     const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId);
     const successArray = (typeof imTicketsResult.success === 'undefined') ? [] : imTicketsResult.success;
@@ -311,24 +320,24 @@ pushIssuesToIm = async (providerId, applicationId, issues, token) => {
             issueObj["updateExternalIdError"] = error;
         }
         if(process.env.APPSCAN_PROVIDER == "ASOC"){
-            var downloadPath = `./temp/${applicationId}_${issueId}.html`;
+            var downloadPath = `./tempReports/${applicationId}_${issueId}.html`;
         }else if(process.env.APPSCAN_PROVIDER == "ASE"){
             var downloadPath = `./temp/${applicationId}_${issueId}.zip`;
         }
         if(process.env.GENERATE_HTML_FILE_JIRA == "true"){
             try {
-                process.env.APPSCAN_PROVIDER == 'ASE' ? await issueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, token) : await asocIssueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, token);
-                // if(process.env.APPSCAN_PROVIDER == 'ASOC'){
-                //   await asocIssueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, token);
-                // }
+                process.env.APPSCAN_PROVIDER == 'ASE' ? await issueService.getHTMLIssueDetails(applicationId, issueId, downloadPath, token) : '';
             } catch (error) {
                 logger.error(`Downloading HTML file having issue details failed for the issueId ${issueId} with an error ${error}`);
                 issueObj["attachIssueDataFileError"] = error;
             }
         }
-        
         try {
-            if (require("fs").existsSync(downloadPath)) await igwService.attachIssueDataFile(imTicket, downloadPath, imConfig, providerId);
+            if (require("fs").existsSync(downloadPath)) {
+                await igwService.attachIssueDataFile(imTicket, downloadPath, imConfig, providerId);
+                // await igwService.addJiraAttach(imTicket, downloadPath, imConfig, providerId, bb)
+            }
+            
         } catch (error) {
             logger.error(`Attaching data file for the issueId ${issueId} to ticket ${imTicket} failed with an error ${error}`);
             issueObj["attachIssueDataFileError"] = error;
