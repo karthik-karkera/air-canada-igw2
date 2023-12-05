@@ -237,7 +237,6 @@ getLatestProviderTickets = async(providerId, period) => {
 
 startCron = async (providerId, syncinterval) => {
     const token = await appscanLoginController();
-    logger.info(token, 'main')
     if (typeof token === 'undefined') return;
 
     const completedScans = await getCompletedScans(syncinterval, token);
@@ -252,7 +251,6 @@ startCron = async (providerId, syncinterval) => {
                     const token = await appscanLoginController();
                     if (typeof token === 'undefined') logger.error('Not a valid token')
                     else{
-                        logger.info(token, 'nested')
                         const issuesData = await pushIssuesOfScan(scan.Id, scan.AppId, token, providerId);
                         if (typeof issuesData != 'undefined') output.push(issuesData);
                     }
