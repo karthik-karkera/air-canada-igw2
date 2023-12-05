@@ -415,7 +415,6 @@ createImTickets = async (filteredIssues, imConfig, providerId, applicationId) =>
 pushIssuesToIm = async (providerId, applicationId, issues, token) => {
     var imConfig = await getIMConfig(providerId);
     if(typeof imConfig === 'undefined') return;
-
     const filteredIssues = await igwService.filterIssues(issues, imConfig);
 
     if(process.env.APPSCAN_PROVIDER == "ASOC" && filteredIssues.length > 0){
@@ -429,12 +428,19 @@ pushIssuesToIm = async (providerId, applicationId, issues, token) => {
     logger.info(`Issues count after filtering is ${filteredIssues.length}`);
     const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId, applicationId);
     const successArray = (typeof imTicketsResult.success === 'undefined') ? [] : imTicketsResult.success;
+    let count = 0
+    let refreshedToken = await appscanLoginController();
     for(let j=0; j<successArray.length; j++){
+        count++;
+        if(count > 200){
+            refreshedToken = await appscanLoginController();
+            count=0;
+        }
         const issueObj = successArray[j];
         const issueId = issueObj.issueId;
         const imTicket = issueObj.ticket;
         try {
-            await updateExternalId(applicationId, issueId, imTicket, token);  
+            await updateExternalId(applicationId, issueId, imTicket, refreshedToken);  
         } catch (error) {
             logger.error("Could not update the external Id of the issue for a ticket "+ error);
             issueObj["updateExternalIdError"] = error;
