@@ -334,4 +334,8 @@ router.get('/sync/app/:appid', tokenValidation.validateToken, schemas.appId, val
 */ 
 router.get('/sync/job/:jobid', tokenValidation.validateToken, schemas.jobId, validationMsgs.validateRequestSchema, igwController.pushJobForScan);
 
+
+router.get('/sync/startImSync/:syncinterval', tokenValidation.validateToken, igwController.startIMSynchronizer);
+router.get('/sync/stopImSync', tokenValidation.validateToken, igwController.stopProviderSync);
+
 module.exports = router;

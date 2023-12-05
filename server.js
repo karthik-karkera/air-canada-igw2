@@ -16,13 +16,14 @@ startServer();
 
 if (typeof process.env.IM_PROVIDER != 'undefined' && typeof process.env.SYNC_INTERVAL != 'undefined')
   igwController.startSync(process.env.IM_PROVIDER, process.env.SYNC_INTERVAL);
+  igwController.startProviderSync(process.env.IM_PROVIDER, process.env.IM_SYNC_INTERVAL)
 
 function startServer()
 {
     const SECURE_PORT = process.env.SECURE_PORT || 8443;
     const secureserver = https.createServer(secure_options,app);
     secureserver.listen(SECURE_PORT);
-    secureserver.timeout= 600000;
+    secureserver.timeout= 18000000;
     logger.info(constants.START_SERVER_MSG);
 }  
 

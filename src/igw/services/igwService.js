@@ -75,11 +75,18 @@ methods.filterIssues = async (issues, imConfig) => {
     return filteredIssues;
 }
 
-methods.createImTickets = async (filteredIssues, imConfig, providerId) => {
+methods.createImTickets = async (filteredIssues, imConfig, providerId, applicationId) => {
     var result;
     if (providerId === constants.DTS_JIRA)
-        result = await jiraService.createTickets(filteredIssues, imConfig);
+        result = await jiraService.createTickets(filteredIssues, imConfig, applicationId);
 
+    return result;
+}
+
+methods.getLatestImTickets = async (providerId, syncInterval, imConfig) => {
+    var result;
+    if (providerId === constants.DTS_JIRA)
+        result = await jiraService.getMarkedTickets(syncInterval, imConfig);
     return result;
 }
 
@@ -363,7 +370,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
             // traceInvocation: a["variant-group"]?.item["issue-information"]?.['call-trace']?.['call-invocation']?.["call-invocation"]
             // CVSS Version
         }))
-        // logger.info(test1)
         let fixGroupData = jObj['xml-report']['fix-group-group']?.item.map(res => ({
             fixGroupLocation: res?.Location,
             fixGroupId: res?.['@_id'],
@@ -529,11 +535,10 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
         const html = fs.readFileSync(downloadPath, 'utf-8');
         const $ = cheerio.load(html);
         const sections = {};
-        const issueTypeAndHeaderData = {};
         const articleData = {};
         const articleLinks = $('a[name^="article-"]');
         let applicationName, businessImpact, reportName, reportDate;
-        //Get Application Name
+        //Get Application Name & Business Impact
         $('h2').each((index, element) => {
             const text = $(element).text();
             if (text.includes('Application Name') && !applicationName) {
@@ -542,6 +547,7 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
                 businessImpact = text.split(':')[1].trim();
             }
         })
+        //Get Report Name & Report Creation Date
         $('h4').each((index, element) => {
             const text = $(element).text();
             if (text.includes('Report Name') && !reportName) {
@@ -565,24 +571,6 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
             sections[issueId] = { 'issue': String(sectionHtml), 'fixGroupId': fixGroupId }
         });
         let objKeys = Object.keys(sections);
-        // FIX GROUP
-        // $('.issueType').each((index, element) => {
-        //     const $element = $(element);
-        //     const issueTypeHtml = $element.prop('outerHTML'); // Get the outer HTML of the issueType element
-        //     const id = $element.attr('id');
-        //     const nextIssueHeader = $element.next('.issueHeader').prop('outerHTML'); // Get the outer HTML of the next issueHeader element
-        //     // Store the HTML content of issueType and the next issueHeader
-        //     if (id && issueTypeHtml && nextIssueHeader) {
-        //         const fixGroupId = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').find('a').attr('href').split('#');
-        //         const issueTypeName = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').text().trim()
-        //         const severityClass = $(element).find('.severity').text() == 'I' ? 'severity_0' : $(element).find('.severity').text() == 'L' ? 'severity_1' : $(element).find('.severity').text() == 'M' ? 'severity_2' : 'severity_3'
-        //         issueTypeAndHeaderData[id] = { 'fixGroup': issueTypeHtml + nextIssueHeader, 'href': fixGroupId[1], 'issueTypeName': issueTypeName, severityClass };
-        //     }
-
-        //     const sectionHtml = $element.nextUntil('.issueType').addBack();
-        //     const $sectionHtml = $(sectionHtml);
-        //     const issueId = $sectionHtml.find('.row .name:contains("Issue ID:")').next('.value').text().trim();
-        // });
 
         $('.issueType').each((index, element) => {
             const $element = $(element);
@@ -600,9 +588,6 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
             const elementsInRange = $element.nextUntil('.issueType').addBack();
             const $elementsInRange = cheerio.load(String(elementsInRange));
 
-            const issueHeaderData = []
-            let currentSection = []
-
             $elementsInRange('.issueHeader').each((index, element) => {
                 const $element = $(element);
                 const issueName = $element.find('.row .name').text().trim();
@@ -614,9 +599,23 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
                 const issueId = $element.find('.row .name:contains("Issue ID:")').next('.value').text().trim();
                 const fixGroupId = $element.find('.row .name:contains("Fix Group ID:")').next('.value').find('a').text().trim();
                 const howToFix = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').find('a').text();
-                const sectionHtml = $element.nextUntil('.issueHeader').addBack();
+                let sectionHtml = $element.nextUntil('.issueHeader').addBack();
+                
+                // Replace Count in Issue Title 
+                if (sectionHtml.text().includes('Audit Trail')) {
+                    sectionHtml.find('.h3group h3').text('Issue 1 of 1 - Audit Trail');
+                } else if (sectionHtml.text().includes('Details')) {
+                    sectionHtml.find('.h3group h3').text('Issue 1 of 1 - Details');
+                } else if (sectionHtml.text().includes('Discussion')) {
+                    sectionHtml.find('.h3group h3').text('Issue 1 of 1 - Discussion');
+                }
+                sectionHtml.find('.h3group h2').text('Issue 1 of 1');
+                
                 let fixGroupData = issueTypeHtml + nextIssueHeader;
-                const severityClass = $(element).find('.severity').text() == 'I' ? 'severity_0' : $(element).find('.severity').text() == 'L' ? 'severity_1' : $(element).find('.severity').text() == 'M' ? 'severity_2' : 'severity_3'
+                const severityElement = $element.find('.row .name:contains("Severity:")')
+                const severityClass = severityElement.next('.value').text().trim() == 'Informational' ? 'severity_0' : severityElement.next('.value').text().trim() == 'Low' ? 'severity_1' : severityElement.next('.value').text().trim() == 'Medium' ? 'severity_2' : 'severity_3'
+
+                const severity = $(element).find('.severity').text()
                 sections[issueId] = { 'issue': String(sectionHtml), 'fixGroupId': fixGroupId, 'fixGroupData': fixGroupData, 'href': fixGroupIdHref, severityClass, howToFix }
             })
 
@@ -624,13 +623,6 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
                 const fixGroupId = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').find('a').attr('href').split('#');
                 const issueTypeName = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').text().trim()
                 const severityClass = $(element).find('.severity').text() == 'I' ? 'severity_0' : $(element).find('.severity').text() == 'L' ? 'severity_1' : $(element).find('.severity').text() == 'M' ? 'severity_2' : 'severity_3'
-                // issueTypeAndHeaderData[id] = { 'fixGroup': issueTypeHtml + nextIssueHeader, 'href': fixGroupId[1], 'issueTypeName': issueTypeName, severityClass };
-
-                // $('.issueHeader').each((index, element1) => {
-                //     const $element1 = $(element1);
-                //     const issueName = $element1.find('.row .name').text().trim();
-                //     logger.info(issueName, 'L')
-                // })
             }
         });
 
@@ -648,21 +640,20 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
             while (nextElement.length > 0 && !nextElement.is('a[name^="article-"]')) {
                 // Append the HTML content of the current element to articleContent
                 articleContent += nextElement.prop('outerHTML');
-
                 // Move to the next sibling element
                 nextElement = nextElement.next();
             }
 
             // Store the article content in the articleData object using the article name as the key
             articleData[articleName] = articleContent;
-            // logger.info(articleContent)
         });
         objKeys.map(issue => {
             if (sections[issue]['issue']) {
-                let htmlReports = addData.addData({ applicationName, businessImpact, reportName, reportDate, issue: sections[issue]['issue'], fixGroupId: sections[issue]['fixGroupId'], issueTypeName: sections[issue]['issueTypeName'], severityClass: sections[issue]['severityClass'], "howToFix": articleData[`${sections[issue]['href'][1]}`], "howToFixTitle": sections[issue]['howToFix'], "fixGroupHeaderData": sections[issue]['fixGroupData'] });
+                let htmlReports = addData.addData({ applicationName, businessImpact, reportName, reportDate, issue: sections[issue]['issue'], fixGroupId: sections[issue]['fixGroupId'], issueTypeName: sections[issue]['issueTypeName'], severityClass: sections[issue]['severityClass'], "howToFix": articleData[`${sections[issue]['href'][1]}`] || '', "howToFixTitle": sections[issue]['howToFix'], "issueTypeAttr": sections[issue]['href'][1] || '', "fixGroupHeaderData": sections[issue]['fixGroupData'] });
+                
                 fs.writeFile(`./tempReports/${appId}_${issue}.html`, htmlReports, async err => {
                     if (err) {
-                        logger.error(`Error Splitting XML file for ${appId} - ${issue} - ${err}`)
+                        logger.error(`Error Splitting HTML file for ${appId} - ${issue} - ${err}`)
                     };
                 })
             }

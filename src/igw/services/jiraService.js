@@ -12,17 +12,18 @@ methods.jiraValidateToken = async (token) => {
     return await util.httpImCall(imConfig); 
 };
 
-methods.createTickets = async (issues, imConfigObject) => {
+methods.createTickets = async (issues, imConfigObject, applicationId) => {
     var output = {};
     var success = [];
     var failures = [];
     for (var i=0; i<issues.length; i++){
-        const imPayload = await createPayload(issues[i], imConfigObject); //LAST
+        const imPayload = await createPayload(issues[i], imConfigObject, applicationId); //LAST
         try {
             // var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+cryptoService.decrypt(imConfigObject.imPassword));
             var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+imConfigObject.imPassword);
             const imConfig = getConfig("POST", basicToken, imConfigObject.imurl+constants.JIRA_CREATE_TICKET, imPayload);
             const result = await util.httpImCall(imConfig); 
+            await delay(3000);
             if (result.code === 201){
                 const imTikcket = imConfigObject.imurl+"/browse/"+result.data.key;
                 process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({issueId: issues[i]["Id"], ticket: imTikcket}) : success.push({issueId: issues[i]["id"], ticket: imTikcket});
@@ -41,11 +42,11 @@ methods.createTickets = async (issues, imConfigObject) => {
     return output;
 };
 
-createPayload = async (issue, imConfigObject) => {
+createPayload = async (issue, imConfigObject, applicationId) => {
+    if(typeof imConfigObject.improjectkey == 'string'){
     var payload = {};
     var attrMap = {};
     // let priority = imConfigObject.severitymap[issue["Severity"]] == 'Low' ? '4' : imConfigObject.severitymap[issue["Severity"]] == 'Medium' ? '3' : imConfigObject.severitymap[issue["Severity"]] == 'High' ? '2' : '1';
-    // console.log(priority, imConfigObject.severitymap[issue["Severity"]] )
     attrMap["project"] = {"key" : imConfigObject.improjectkey};
     attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
@@ -68,6 +69,30 @@ createPayload = async (issue, imConfigObject) => {
     }
     payload["fields"] = attrMap;
     return payload;
+    }else{
+        var payload = {};
+        var attrMap = {};
+        attrMap["project"] = {"key" : imConfigObject.improjectkey[applicationId] == undefined ? imConfigObject.improjectkey['default'] : imConfigObject.improjectkey[applicationId]};
+        attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
+        if(process.env.APPSCAN_PROVIDER == "ASOC"){
+            attrMap["summary"] = "Security issue: "+ issue["IssueType"] + " found by AppScan";
+        }else{
+            attrMap["summary"] = "Security issue: "+ issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
+        }
+        attrMap["description"] = JSON.stringify(issue, null, 4);
+        const attributeMappings = typeof imConfigObject.attributeMappings != 'undefined' ? imConfigObject.attributeMappings : [];
+     
+        for(var i=0; i<attributeMappings.length; i++) {
+            if(attributeMappings[i].type === 'Array'){
+                attrMap[attributeMappings[i].imAttr] = [issue[attributeMappings[i].appScanAttr] || ''];
+            }
+            else{
+                attrMap[attributeMappings[i].imAttr] = issue[attributeMappings[i].appScanAttr];    
+            }
+        }
+        payload["fields"] = attrMap;
+        return payload;
+    }
 }
 
 methods.attachIssueDataFile = async (ticket, filePath, imConfigObject) => {
@@ -78,7 +103,16 @@ methods.attachIssueDataFile = async (ticket, filePath, imConfigObject) => {
     var basicToken = `Basic ${Buffer.from(userData).toString('base64')}`;
     const imConfig = getConfig("POST", basicToken, url, formData);
     return await util.httpImCall(imConfig); 
-}   
+}  
+
+methods.getMarkedTickets = async (syncInterval, imConfigObject) => {
+    const url = imConfigObject.imurl + constants.JIRA_LATEST_ISSUE.replace("{SYNCINTERVAL}",syncInterval)
+    const formData = new FormData();
+    let userData = imConfigObject.imUserName +":"+imConfigObject.imPassword;
+    var basicToken = `Basic ${Buffer.from(userData).toString('base64')}`;
+    const imConfig = getConfig("GET", basicToken, url, "");
+    return await util.httpImCall(imConfig); 
+}
 
 getConfig = function(method, token, url, data) {
     return {
@@ -94,5 +128,9 @@ getConfig = function(method, token, url, data) {
         }
     };
 }
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 module.exports = methods;

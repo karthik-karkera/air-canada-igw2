@@ -1,4 +1,6 @@
 const util = require("../../utils/util");
+const log4js = require("log4js");
+const logger = log4js.getLogger("igwController");
 const constants = require("../../utils/constants");
 const igwService = require('../../igw/services/igwService')
 var methods = {};
@@ -10,11 +12,25 @@ methods.getIssuesOfApplication = async (appId, token) => {
     return await util.httpCall("GET", token, url);
 };
 
+methods.getIssuesOfScan = async (scanId, token) => {
+    const url = constants.ASOC_SCAN_DETAILS.replace("{SCANID}", scanId);
+    return await util.httpCall("GET", token, url);
+};
+
+methods.updateIssuesOfApplication = async (issueId, status, comment, externalId, token) => {
+    const url = constants.ASOC_UPDATE_ISSUE.replace("{ISSUEID}", issueId);
+    let data = {
+        "ExternalId": externalId,
+        "Status": status,
+        "Comment": comment
+    }
+    return await util.httpCall("PUT", token, url, data);
+};
+
 methods.getApplicationDetails = async (appId, token) => {
     const url = constants.ASOC_APPLICATION_DETAILS.replace("{APPID}", appId);
     return await util.httpCall("GET", token, url);
 };
-
 
 methods.getIssueDetails = async (appId, issueId, token) => {
     const url = constants.ASOC_ISSUE_DETAILS.replace("{ISSUEID}", issueId);
@@ -72,70 +88,80 @@ methods.getHTMLIssueDetails = async (appId, issueId, downloadPath, token) => {
     // function timeout(ms) {
     //     return new Promise(resolve => setTimeout(resolve, ms));
     // }
-// --->>
+    // --->>
     let intervalid
     async function testFunction() {
         intervalid = setInterval(async () => {
-            // I use axios like: axios.get('/user?ID=12345').then
             let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
-            // console.log('1 steppp')
-            if(getDownloadUrl.data.Status == 'Ready'){
-                // console.log('2 steppp')
+            if (getDownloadUrl.data.Status == 'Ready') {
                 clearInterval(intervalid)
                 return await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
             }
         }, 3000)
     }
-    // you can use this function like
     await testFunction()
-    
+
 }
 
 methods.downloadAsocReport = async (providerId, appId, issues, token) => {
     const createReportUrl = constants.ASOC_CREATE_HTML_ISSUE_DETAILS.replace("{APPID}", appId);
     const data = constants.CREATE_REPORT_REQUEST_CONFIGURATION; //CREATE ISSUE PAYLOAD
-    // const OdataFilter = `Id eq '${issueId}'`;
-    // data.OdataFilter = OdataFilter;
 
-    // COMMENT THIS
-    
-    try{
-        console.log(data, createReportUrl)
+    try {
         let createIssue = await util.httpCall("POST", token, createReportUrl, data); //CREATE ISSUE REPORT;
         var reportID = await createIssue?.code == 200 ? createIssue?.data?.Id : createIssue;
-    }catch(err){
-        logger.error(err)
-    }
-        
 
-    const getDownloadReportsUrl = await constants.ASOC_GET_HTML_ISSUE_DETAILS.replace("{REPORTID}", reportID); //GET REPORT DOWNLOAD URL
-    const getReportStatusUrl = await constants.ASOC_REPORT_STATUS.replace("{REPORTID}", reportID); //GET REPORT STATUS
+        const getDownloadReportsUrl = await constants.ASOC_GET_HTML_ISSUE_DETAILS.replace("{REPORTID}", reportID); //GET REPORT DOWNLOAD URL
+        const getReportStatusUrl = await constants.ASOC_REPORT_STATUS.replace("{REPORTID}", reportID); //GET REPORT STATUS
 
-    var downloadPath = `./temp/${appId}.html`;
-    let intervalid;
-    async function testFunction() {
-        return new Promise(
-            function(resolve){
-                return intervalid = setInterval(async () => {
-                    let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
-                    if(getDownloadUrl.data.Status == 'Ready'){
-                        let downloadFileData = await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
-                        if(downloadFileData){
-                            // let res = await igwService.splitXmlFile(downloadPath, appId)
-                            console.log(downloadPath, appId)
-                            let res = await igwService.splitHtmlFile(downloadPath, appId)
-                            clearInterval(intervalid)
-                            resolve(res)
+        var downloadPath = `./temp/${appId}.html`;
+        let intervalid;
+        async function splitFile() {
+            return new Promise(
+                function (resolve) {
+                    return intervalid = setInterval(async () => {
+                        let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
+                        if (getDownloadUrl.data.Status == 'Ready') {
+                            let downloadFileData = await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
+                            if (downloadFileData) {
+                                let res = await igwService.splitHtmlFile(downloadPath, appId)
+                                clearInterval(intervalid)
+                                resolve(res)
+                            }
                         }
-                    }
-                }, 3000)
-            }
-        )
-    }
-    // you can use this function like
-    let a = await testFunction();
-    return a;
-}
+                    }, 3000)
+                }
+            )
+        }
 
+        // async function splitFile() {
+        //     return new Promise((resolve, reject) => {
+        //         let intervalid = setInterval(async () => {
+        //             try {
+        //                 let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
+        
+        //                 if (getDownloadUrl.data.Status === 'Ready') {
+        //                     let downloadFileData = await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
+        
+        //                     if (downloadFileData) {
+        //                         let res = await igwService.splitHtmlFile(downloadPath, appId);
+        //                         clearInterval(intervalid);
+        //                         resolve(res);
+        //                     }
+        //                 }
+        //             } catch (error) {
+        //                 clearInterval(intervalid);
+        //                 reject(error);
+        //             }
+        //         }, 3000);
+        //     });
+        // }
+        
+        let splitFiles = await splitFile();
+        return splitFiles;
+    } catch (err) {
+        throw err
+    }
+}
 
 module.exports = methods;

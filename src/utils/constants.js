@@ -27,7 +27,7 @@ var constants = {
 	//ASOC APIs
 	ASOC_API_KEYLOGIN: "/api/V2/Account/ApiKeyLogin",
 	// ASOC_JOB_SEARCH: "/api/v2/Reports",
-	ASOC_JOB_SEARCH: '/api/v2/Scans/GetAsPageMin?%24top=200&%24orderby=LastModified&%24expand=LatestExecution&%24inlinecount=allpages',
+	ASOC_JOB_SEARCH: '/api/v2/Scans/GetAsPageMin?%24inlinecount=allpages',
 	ASOC_ISSUES_APPLICATION: "/api/v2/Issues/Application/{APPID}",
 	ASOC_APPLICATION_DETAILS: "/api/V2/Apps/{APPID}",
 	ASOC_ISSUE_DETAILS: "/api/V2/Issues/{ISSUEID}",
@@ -65,6 +65,7 @@ var constants = {
 	JIRA_ATTACH_FILE: "/rest/api/latest/issue/{JIRAID}/attachments",
 	// JIRA_CREATE_TICKET: "/rest/api/latest/issue",
 	JIRA_CREATE_TICKET: "/rest/api/2/issue",
+	JIRA_LATEST_ISSUE : "/rest/api/2/search?jql=status=Done%20AND%20updated%20>=%20-{SYNCINTERVAL}&maxResults=100",
 
 	INVALID_ADMIN_EMAIL: "Invalid admin email",
 	INVALID_ADMIN_PASSWORD: "Invalid admin password",

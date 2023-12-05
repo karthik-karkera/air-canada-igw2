@@ -1596,38 +1596,8 @@ methods.addData = ({ ...data }) => {
         <h4 style="margin: 20px;" xmlns="">Report created at: ${data.reportDate}</h4>
         <h4 style="margin: 20px;" xmlns=""></h4><br xmlns="" />
         <br xmlns="" /><br xmlns="" /><br xmlns="" />
-        <h1 id="toc"><a name="toc"></a>Table of Contents</h1>
-        <hr style="noshade" />
-        <div class="toc" xmlns="">
-            <h2><a href="#executiveSummary">Summary</a></h2>
-            <ul>
-                <li><a href="#issueTypes">Issues</a></li>
-            </ul>
-            ${(data.fixGroupId != "") ?
-            `<h2><a href="#issuesByFixGroups">Fix-Groups</a></h2>
-            <ul>
-                <li><a href="#fix-group-${data?.fixGroupId}">Common Open Source: ${data?.issueTypeName}:
-                    <string style="color: #555555">${data?.fixRemediation}</string></a>
-                </li>
-            </ul>` : ``
-        }
-            ${data.fixGroupId == '' ?
-            `<h2><a href="#issuesByIssueType">Issue Types</a></h2>
-                <ul>
-                    <li><a href="#issue-${data?.issueTypeAttr}">${data.issueTypeName}</a></li>
-                </ul>
-                `
-            : ''
-        }
-            <h2><a href="#Articles">How to Fix</a></h2>
-            <ul>
-                <li><a href="#article-OpenSource">${data.howToFixTitle}</a></li>
-            </ul>
-        </div>
-         
-
+        
         <input type="hidden" name="sectionstart" />
-         
 
 
         <h1 id="executiveSummary"><a name="executiveSummary"></a>Summary</h1>
