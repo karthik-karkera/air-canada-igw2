@@ -648,8 +648,8 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
             articleData[articleName] = articleContent;
         });
         objKeys.map(issue => {
-            if (sections[issue]['issue']) {
-                let htmlReports = addData.addData({ applicationName, businessImpact, reportName, reportDate, issue: sections[issue]['issue'], fixGroupId: sections[issue]['fixGroupId'], issueTypeName: sections[issue]['issueTypeName'], severityClass: sections[issue]['severityClass'], "howToFix": articleData[`${sections[issue]['href'][1]}`] || '', "howToFixTitle": sections[issue]['howToFix'], "issueTypeAttr": sections[issue]['href'][1] || '', "fixGroupHeaderData": sections[issue]['fixGroupData'] });
+            if (sections[issue]['issue'] && sections[issue]['issue'] != '') {
+                let htmlReports = addData.addData({ applicationName, businessImpact, reportName, reportDate, issue: sections[issue]['issue'], fixGroupId: sections[issue]['fixGroupId'], issueTypeName: sections[issue]['issueTypeName'], severityClass: sections[issue]['severityClass'], "howToFix": articleData[`${sections[issue]?.['href']?.[1]}`] || '', "howToFixTitle": sections[issue]['howToFix'], "issueTypeAttr": sections[issue]?.['href']?.[1] || '', "fixGroupHeaderData": sections[issue]['fixGroupData'] });
                 
                 fs.writeFile(`./tempReports/${appId}_${issue}.html`, htmlReports, async err => {
                     if (err) {

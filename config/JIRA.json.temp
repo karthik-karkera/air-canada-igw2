@@ -1,11 +1,10 @@
 {
-    "maxissues": 1,
-    "issuestates": "New,Open",
-    "issueseverities": "High,Medium",
+    "maxissues": 1000,
+    "issuestates": "New,Open,InProgress,Reopened",
+    "issueseverities": "Critical,High,Medium",
     "imurl": "<Jira URL>",
     "imUserName": "<username>",
     "imPassword": "<encrypted password or accesstoken. To encrypt the password run the command "node .\cryptoService.js --encrypt <password>" from the base directory.>",
-    "improjectkey": "<project key>",
     "imissuetype": "<issue type like task, bug, epic, etc.>",
     "imsummary": "Security issue: %IssueType% found by %Scanner%",
     "severitymap": {

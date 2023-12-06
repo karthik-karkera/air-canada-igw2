@@ -29,6 +29,7 @@
     "swagger-ui-express": "^4.1.6"
   },
   "nodemonConfig": {
-    "ignore": ["temp", "tempReports"]
+    "verbose": true,
+    "ignore": ["temp", "tempReports", "logs", "server.js", "package.json"]
   }
 }

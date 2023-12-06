@@ -16,7 +16,9 @@ startServer();
 
 if (typeof process.env.IM_PROVIDER != 'undefined' && typeof process.env.SYNC_INTERVAL != 'undefined')
   igwController.startSync(process.env.IM_PROVIDER, process.env.SYNC_INTERVAL);
-  igwController.startProviderSync(process.env.IM_PROVIDER, process.env.IM_SYNC_INTERVAL)
+  if(process.env.IM_SYNC_INTERVAL != '0m'){
+    igwController.startProviderSync(process.env.IM_PROVIDER, process.env.IM_SYNC_INTERVAL)
+  }
 
 function startServer()
 {
