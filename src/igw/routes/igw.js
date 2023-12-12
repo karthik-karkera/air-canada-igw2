@@ -219,7 +219,7 @@ router.get('/sync/start/:syncinterval', tokenValidation.validateToken, schemas.s
  * /igw/sync/stop:
  *   get:
  *     summary: Stop the sync thread used to push data from AppScan to Issue Management System. 
- *     description: Start the sync thread used to push data from AppScan to Issue Management System.
+ *     description: Stop the sync thread used to push data from AppScan to Issue Management System.
  *     tags: 
  *       - igw
  *     parameters:
@@ -334,8 +334,65 @@ router.get('/sync/app/:appid', tokenValidation.validateToken, schemas.appId, val
 */ 
 router.get('/sync/job/:jobid', tokenValidation.validateToken, schemas.jobId, validationMsgs.validateRequestSchema, igwController.pushJobForScan);
 
+/**
+ * @swagger
+ * /igw/sync/startImSync/{syncinterval}:
+ *   get:
+ *     summary: Start the sync thread to push data from Issue Management System to AppScan. 
+ *     description: Start the sync thread to push data from Issue Management System to AppScan.
+ *     tags: 
+ *       - igw
+ *     parameters:
+ *       - in: header
+ *         name: auth-token
+ *         required: true
+ *         description: Provide the token returned by /login API in the format "bearer auth-token"
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: syncinterval
+ *         required: true
+ *         description: Provide the interval in minutes or hours or days. Ex. 5m means synchronizer runs every 5 minute to push issues identified in the previous 5 min. 2h means synchronizer runs once in 2 hour to push issues identified in last 2 hour. 2d means synchronizer runs once in 2 days to push issues identified in last 2 days.
+ *         schema:
+ *           type: string
+ *           default: 5m
+ *     responses:
+ *       200:
+ *         description: Ok
+ *       400:
+ *         description: Wrong input
+ *       403:
+ *         description: Invalid token or user does not exist.
+ *       500:
+ *         description: An unknown error has occured.
+*/ 
+router.get('/sync/startImSync/:syncinterval', tokenValidation.validateToken, schemas.syncinterval, igwController.startIMSynchronizer);
 
-router.get('/sync/startImSync/:syncinterval', tokenValidation.validateToken, igwController.startIMSynchronizer);
+/**
+ * @swagger
+ * /igw/sync/stopImSync:
+ *   get:
+ *     summary: Stop the sync thread used to push data from AppScan to Issue Management System. 
+ *     description: Stop the sync thread used to push data from AppScan to Issue Management System.
+ *     tags: 
+ *       - igw
+ *     parameters:
+ *       - in: header
+ *         name: auth-token
+ *         required: true
+ *         description: Provide the token returned by /login API in the format "bearer auth-token"
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Ok
+ *       400:
+ *         description: Wrong input
+ *       403:
+ *         description: Invalid token or user does not exist.
+ *       500:
+ *         description: An unknown error has occured.
+*/ 
 router.get('/sync/stopImSync', tokenValidation.validateToken, igwController.stopProviderSync);
 
 module.exports = router;

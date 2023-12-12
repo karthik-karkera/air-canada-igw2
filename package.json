@@ -30,6 +30,6 @@
   },
   "nodemonConfig": {
     "verbose": true,
-    "ignore": ["temp", "tempReports", "logs", "server.js", "package.json"]
+    "ignore": ["temp", "tempReports", "logs", "server.js","**/*.json"]
   }
 }

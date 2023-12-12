@@ -33,7 +33,7 @@ methods.createTickets = async (issues, imConfigObject, applicationId) => {
                 logger.error(`Failed to create ticket for issue Id ${issues[i]["id"]} and the error is ${result.data}`);
             }
         } catch (error) {
-            logger.error(`))) Failed to create ticket for issue Id ${issues[i]["id"]} and the error is ${JSON.stringify(error.response.data)}`);
+            logger.error(`Failed to create ticket for issue Id ${issues[i]["id"]} and the error is ${JSON.stringify(error.response.data)}`);
             failures.push({issueId: issues[i]["id"], errorMsg: error.message});
         }
     }

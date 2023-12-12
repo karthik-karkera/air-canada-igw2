@@ -154,11 +154,11 @@ methods.startProviderSync = async (providerId, syncinterval) => {
         const [, value, unit] = match;
         cronPattern = value * (unit === 'd' ? 24 * 60 : unit === 'h' ? 60 : unit === 'm' ? 1 : 0);
     }else{
-        throw `Time Format not proper`
+        throw `Time Format not proper. Use format ("2m", "1h", "3d")`
     }
 
     var pattern = `*/${cronPattern} * * * *`;
-    var job = new CronJob(
+    const job = new CronJob(
         pattern,
         function() {
             startProviderCron(providerId, syncinterval);
@@ -334,9 +334,10 @@ getIssuesOfScan = async (scanId, applicationId, token) => {
 updateIssuesOfApplication = async (issueId, applicationId, status, comment, externalid, token) => {
     try{
         // FOR ASOC
+        const token = await appscanLoginController();
         const result = await asocIssueService.updateIssuesOfApplication(issueId, status, comment, externalid, token)
     }catch(error){
-        throw `Failed to update the status for IssueId - ${issueId} Application Id - ${applicationId}`
+        throw `Failed to update the status for IssueId - ${issueId} Application Id - ${applicationId} - ${error?.response?.data?.Message || error}`
     }
 }
 
@@ -392,7 +393,7 @@ pushIssuesOfScan = async (scanId, applicationId, token, providerId) => {
 pushIssuesOfApplication = async (applicationId, token, providerId) => {
     var issues = await getIssuesOfApplication(applicationId, token);
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
-        issues = issues.Items 
+        issues = issues.length > 0 ? issues.Items : []
     }
     logger.info(`${issues.length} issues found in the application ${applicationId}`);
     const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, issues, token);
