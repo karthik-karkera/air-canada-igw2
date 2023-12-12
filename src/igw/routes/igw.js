@@ -366,7 +366,7 @@ router.get('/sync/job/:jobid', tokenValidation.validateToken, schemas.jobId, val
  *       500:
  *         description: An unknown error has occured.
 */ 
-router.get('/sync/startImSync/:syncinterval', tokenValidation.validateToken, schemas.syncinterval, igwController.startIMSynchronizer);
+router.get('/sync/startImSync/:syncinterval', tokenValidation.validateToken, schemas.syncIMInterval, validationMsgs.validateRequestSchema, igwController.startIMSynchronizer);
 
 /**
  * @swagger

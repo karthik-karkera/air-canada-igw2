@@ -8,6 +8,7 @@ schemas.adminPassword = body('adminPassword').isLength({min:8, max:100}).withMes
 schemas.igwLogin = [schemas.adminEmail, schemas.adminPassword];
 schemas.providerid = param("providerid").isIn(constants.PROVIDERS).withMessage(constants.INVALID_PROVIDER_ID);;
 schemas.syncinterval = param("syncinterval").isInt().isLength({ min: 1, max: 3 }).withMessage(constants.INVALID_SYNC_INTERVAL);
+schemas.syncIMInterval = param("syncinterval").isString().isLength({ min: 1, max: 4 }).withMessage(constants.INVALID_SYNC_INTERVAL);
 schemas.appId = process.env.APPSCAN_PROVIDER == 'ASE' ? param("appid").isInt().isLength({ min: 1, max: 6 }).withMessage(constants.INVALID_APP_ID) : param("appid").isString().isLength({min: 36, max: 36}).withMessage(constants.INVALID_APP_ID);
 schemas.jobId = process.env.APPSCAN_PROVIDER == 'ASE' ? param("jobid").isInt().isLength({ min: 1, max: 6 }).withMessage(constants.INVALID_JOB_ID) : param("jobid").isString().isLength({ min: 36, max: 36 }).withMessage(constants.INVALID_JOB_ID);
 

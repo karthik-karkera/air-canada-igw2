@@ -393,7 +393,7 @@ pushIssuesOfScan = async (scanId, applicationId, token, providerId) => {
 pushIssuesOfApplication = async (applicationId, token, providerId) => {
     var issues = await getIssuesOfApplication(applicationId, token);
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
-        issues = issues.length > 0 ? issues.Items : []
+        issues = issues?.Items && issues?.Items.length > 0 ? issues.Items : []
     }
     logger.info(`${issues.length} issues found in the application ${applicationId}`);
     const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, issues, token);
@@ -418,7 +418,7 @@ pushIssuesToIm = async (providerId, applicationId, issues, token) => {
     if(typeof imConfig === 'undefined') return;
     const filteredIssues = await igwService.filterIssues(issues, imConfig);
 
-    if(process.env.APPSCAN_PROVIDER == "ASOC" && filteredIssues.length > 0){
+    if(process.env.APPSCAN_PROVIDER == "ASOC" && filteredIssues.length > 0 && process.env.GENERATE_HTML_FILE_JIRA == "true"){
         try{
             await asocIssueService.downloadAsocReport(providerId, applicationId, issues, token)
         }catch(err){
