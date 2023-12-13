@@ -108,8 +108,7 @@ methods.startIMSynchronizer = async (req, res) => {
 methods.startSync = async (providerId, syncinterval) => {
     const jobInMap = jobsMap.get(providerId);
     if(typeof jobInMap != 'undefined')
-        throw `Job for the provider ${providerId} already exists`;
-        
+        throw `Job for the provider ${providerId} already exists`;    
     var newDateObj = new Date();
     var pattern = '1 '+newDateObj.getMinutes()+' '+newDateObj.getHours()+' */'+syncinterval+' * *';
 
@@ -414,6 +413,17 @@ createImTickets = async (filteredIssues, imConfig, providerId, applicationId) =>
 }
 
 pushIssuesToIm = async (providerId, applicationId, issues, token) => {
+    const folderName1 = 'temp';
+    const folderName2 = 'tempReports';
+
+    if (!fs.existsSync(folderName1)) {
+        // If it doesn't exist, create the folder
+        fs.mkdirSync(folderName1);
+    }
+    if (!fs.existsSync(folderName2)) {
+        // If it doesn't exist, create the folder
+        fs.mkdirSync(folderName2);
+    }
     var imConfig = await getIMConfig(providerId);
     if(typeof imConfig === 'undefined') return;
     const filteredIssues = await igwService.filterIssues(issues, imConfig);
