@@ -4,7 +4,7 @@
   "description": "appScan-issue-gateway-2",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon ./server.js"
+    "start": "SET 'NODE_OPTIONS=--openssl-legacy-provider' && nodemon ./server.js"
   },
   "author": "shashidharp@hcl.com",
   "license": "ISC",
@@ -30,6 +30,12 @@
   },
   "nodemonConfig": {
     "verbose": true,
-    "ignore": ["temp", "tempReports", "logs", "server.js","**/*.json"]
+    "ignore": [
+      "temp",
+      "tempReports",
+      "logs",
+      "server.js",
+      "**/*.json"
+    ]
   }
 }
