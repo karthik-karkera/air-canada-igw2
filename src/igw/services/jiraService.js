@@ -19,7 +19,6 @@ methods.createTickets = async (issues, imConfigObject, applicationId) => {
     for (var i=0; i<issues.length; i++){
         const imPayload = await createPayload(issues[i], imConfigObject, applicationId); //LAST
         try {
-            // var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+cryptoService.decrypt(imConfigObject.imPassword));
             var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+imConfigObject.imPassword);
             const imConfig = getConfig("POST", basicToken, imConfigObject.imurl+constants.JIRA_CREATE_TICKET, imPayload);
             const result = await util.httpImCall(imConfig); 
@@ -46,7 +45,6 @@ createPayload = async (issue, imConfigObject, applicationId) => {
     if(typeof imConfigObject.improjectkey == 'string'){
     var payload = {};
     var attrMap = {};
-    // let priority = imConfigObject.severitymap[issue["Severity"]] == 'Low' ? '4' : imConfigObject.severitymap[issue["Severity"]] == 'Medium' ? '3' : imConfigObject.severitymap[issue["Severity"]] == 'High' ? '2' : '1';
     attrMap["project"] = {"key" : imConfigObject.improjectkey};
     attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
@@ -55,12 +53,10 @@ createPayload = async (issue, imConfigObject, applicationId) => {
         attrMap["summary"] = "Security issue: "+ issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
     }
     attrMap["description"] = JSON.stringify(issue, null, 4);
-    // attrMap["customfield_10006"] = "TEST2-1001";
     const attributeMappings = typeof imConfigObject.attributeMappings != 'undefined' ? imConfigObject.attributeMappings : [];
  
     for(var i=0; i<attributeMappings.length; i++) {
         if(attributeMappings[i].type === 'Array'){
-            // let labelArray = issue[attributeMappings[i].appScanAttr].includes(',') ? issue[attributeMappings[i].appScanAttr].split(',') : issue[attributeMappings[i].appScanAttr];
             attrMap[attributeMappings[i].imAttr] = [issue[attributeMappings[i].appScanAttr] || ''];
         }
         else{

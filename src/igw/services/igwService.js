@@ -268,8 +268,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
         }
         const parser = new XMLParser(options);
         let jObj = parser.parse(data);
-        // jObj['xml-report']['issue-group'].item.map(a => logger.info(a['variant-group'].item['issue-information']['publish-date']))
-        // jObj['xml-report']['issue-group'].item.map(a => logger.info(a['changes-group'].item))
         let {
             company,
             department,
@@ -285,13 +283,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
             deployment,
         } = jObj['xml-report'].layout;
 
-        // ISSUE GROUP
-        // jObj['xml-report']['issue-group'].item.map(a => {
-        //     logger.info(a["asoc-issue-id"], a["variant-group"]);
-        // })
-        // jObj['xml-report']['issue-group'].item.map(a => {
-        //     logger.info(a["asoc-issue-id"], (a['changes-group'].item || ''));
-        // })
         let test1 = jObj['xml-report']['issue-group'].item.map(a => ({
             asocIssueId: a["asoc-issue-id"],
             status: a.status,
@@ -320,7 +311,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
             fixResolutionText: a["variant-group"]?.item["issue-information"]?.["fix-resolution-text"]?.['#text'] || "",
             urlForInfo: a["variant-group"]?.item["issue-information"]?.["url-for-info"]?.['#text'] || "",
             auditTrail: a['changes-group']?.item || "",
-            // dateCreated: a['changes-group']?.item?.['date-created'] || "",
             issueTypeName: a['issue-type-name'],
             issueTypeAttr: a?.['issue-type']?.ref || '',
             fixRemediation: a?.fix?.item?.remediation?.['#text'] || "",
@@ -367,8 +357,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
                     return ''
                 }
             })()
-            // traceInvocation: a["variant-group"]?.item["issue-information"]?.['call-trace']?.['call-invocation']?.["call-invocation"]
-            // CVSS Version
         }))
         let fixGroupData = jObj['xml-report']['fix-group-group']?.item.map(res => ({
             fixGroupLocation: res?.Location,
@@ -390,7 +378,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
                 }
                 else if (res['codeBlock']) {
                     if (Array.isArray(res['codeBlock'].item)) {
-                        // logger.info(res['codeBlock']?.item.map(codeBlockItem => codeBlockItem?.['#text']).join('<br>'))
                         return `<div class="code"> ${res['codeBlock']?.item.map(codeBlockItem => `<xmp> ${codeBlockItem?.['#text']}</xmp>`).join('')} <br></div>`;
                     } else {
                         return `<div class="code"><xmp> ${res['codeBlock']?.item?.['#text']} </xmp></div>`;
@@ -398,7 +385,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
                 }
             }).join(',') : a?.cause?.item?.['#text'] || null,
             risk: Array.isArray(a?.risk?.item) ? a?.risk?.item.map(res => res?.['#text']).join(',') : a?.risk?.item?.['#text'] || null,
-            // fixrecommendations: Array.isArray(a?.recommendations?.item) ? a?.recommendations?.item.map(res => res?.['#text']).join(',') : a?.recommendations?.item?.['#text'] || null,
             fixrecommendations: Array.isArray(a?.recommendations?.item) ? a?.recommendations?.item.map(res => {
                 if (res['#text']) {
                     return res['#text']
@@ -413,18 +399,13 @@ methods.splitXmlFile = async (downloadPath, appId) => {
             }).join(',') : a?.recommendations?.item?.['#text'] || null,
             exploitSamplesMain: a?.exploitSamples?.item?.title?.['#text'] || '',
             exploitSamples: a?.exploitSamples?.item?.exploitBlock.item.map(res => {
-                // logger.info(res?.request)
-                // logger.info(res?.explanation)
-                // logger.info(res, '///////////')
                 if (res?.explanation) {
                     var explanation = res?.explanation?.['#text']
                 }
                 if (res?.request) {
                     if (Array.isArray(res?.request?.item)) {
-                        // logger.info(res?.request?.item.map(req => req?.['#text']).join('<br>'), 'req1')
                         var request = `<div class="code"> ${res?.request?.item.map(req => `<xmp> ${req?.['#text']}</xmp>`).join('')} <br></div>`;
                     } else {
-                        // logger.info(res?.request?.item?.['#text'], 'req2')
                         var request = `<div class="code"><xmp> ${res?.request?.item?.['#text']} </xmp></div>`;
                     }
                 }
@@ -435,7 +416,6 @@ methods.splitXmlFile = async (downloadPath, appId) => {
                         var response = `<div class="code"><xmp> ${res?.response?.item?.['#text']} </xmp></div>`;
                     }
                 }
-                // logger.info(explanation, '///', request, '////', response)
                 return `${explanation} ${request} ${response}`
             }).join("") || '',
             externalReferences: a?.externalReferences?.item || null,
@@ -448,12 +428,7 @@ methods.splitXmlFile = async (downloadPath, appId) => {
             ...articleGroupData.find((item2) => item1.fixGroupType == 'API' ? item1.issueTypeAttr == item2.articleGroupId && item1.fixRemediation == item2.articleGroupApi : item1.issueTypeAttr == item2.articleGroupId),
             ...item1,
         }));
-        // mergedData.map(a => {
-        //     if (a.asocIssueId == 'ef1df8f7-90c0-ec11-997e-2818780a4811') {
-        //         logger.info(a)
-        //     }
-        // })
-        // logger.info(mergedData)
+
         if (require("fs").existsSync(downloadPath)) {
             mergedData.map(a => {
                 if (a.externalReferences == undefined) {
@@ -579,10 +554,6 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
             const nextIssueHeader = $element.next('.issueHeader').prop('outerHTML'); // Get the outer HTML of the next issueHeader element
             if (id && issueTypeHtml && nextIssueHeader) {
                 var fixGroupIdHref = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').find('a').attr('href').split('#') || '';
-                //     const fixGroupId = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').find('a').attr('href').split('#');
-                //     const issueTypeName = $(nextIssueHeader).find('.row .name:contains("How to Fix:")').next('.value').text().trim()
-                //     const severityClass = $(element).find('.severity').text() == 'I' ? 'severity_0' : $(element).find('.severity').text() == 'L' ? 'severity_1' : $(element).find('.severity').text() == 'M' ? 'severity_2' : 'severity_3'
-                //     issueTypeAndHeaderData[id] = { 'fixGroup': issueTypeHtml + nextIssueHeader, 'href': fixGroupId[1], 'issueTypeName': issueTypeName, severityClass };
             }
 
             const elementsInRange = $element.nextUntil('.issueType').addBack();

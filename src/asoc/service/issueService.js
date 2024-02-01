@@ -57,38 +57,11 @@ methods.updateIssue = async (issueId, data, token, eTag) => {
 methods.getHTMLIssueDetails = async (appId, issueId, downloadPath, token) => {
     const createReportUrl = constants.ASOC_CREATE_HTML_ISSUE_DETAILS.replace("{APPID}", appId);
     const data = constants.CREATE_REPORT_REQUEST_CONFIGURATION; //CREATE ISSUE PAYLOAD
-    // const OdataFilter = `Id eq '${issueId}'`;
-    // data.OdataFilter = OdataFilter;
-
-    // COMMENT THIS
-    // let createIssue = await util.httpCall("POST", token, createReportUrl, data); //CREATE ISSUE REPORT
-    // console.log(createIssue.data.Id, 'creat ID')
-    // const reportID = await createIssue.data.Id;
-    // COMMENT END
 
     const reportID = 'f5eb6475-abff-468f-a35e-ac63d234c5a5'
     const getDownloadReportsUrl = await constants.ASOC_GET_HTML_ISSUE_DETAILS.replace("{REPORTID}", reportID); //GET REPORT DOWNLOAD URL
     const getReportStatusUrl = await constants.ASOC_REPORT_STATUS.replace("{REPORTID}", reportID); //GET REPORT STATUS
-    // --->>>
-    // async function checkReport(getReportStatusUrl){
-    //     let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
-    //     if(getDownloadUrl.data.Status == 'Ready'){
-    //         console.log('ready')
-    //         return await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
-    //     }else{
-    //         console.log('check if')
-    //         setTimeout(() => checkReport(getReportStatusUrl), 4000)
-    //         await timeout(3000);
-    //         return checkReport(getReportStatusUrl)
-    //     }
 
-    // }
-
-    // let a = await checkReport(getReportStatusUrl);
-    // function timeout(ms) {
-    //     return new Promise(resolve => setTimeout(resolve, ms));
-    // }
-    // --->>
     let intervalid
     async function testFunction() {
         intervalid = setInterval(async () => {

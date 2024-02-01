@@ -26,7 +26,6 @@ var constants = {
 
 	//ASOC APIs
 	ASOC_API_KEYLOGIN: "/api/V2/Account/ApiKeyLogin",
-	// ASOC_JOB_SEARCH: "/api/v2/Reports",
 	ASOC_JOB_SEARCH: '/api/v2/Scans/GetAsPageMin?%24inlinecount=allpages',
 	ASOC_ISSUES_APPLICATION: "/api/v2/Issues/Application/{APPID}",
 	ASOC_APPLICATION_DETAILS: "/api/V2/Apps/{APPID}",
@@ -36,7 +35,6 @@ var constants = {
 	ASOC_REPORT_STATUS: "/api/V2/Reports/{REPORTID}",
 	ASOC_GET_HTML_ISSUE_DETAILS: "/api/v2/Reports/Download/{REPORTID}",
 	ASOC_SCAN_DETAILS: "/api/v2/Issues/Scan/{SCANID}",
-	// ASOC_CREATE_HTML_SCAN_DETAILS: "/api/v2/Reports/Security/Scan/{SCANID}",
 	CREATE_REPORT_REQUEST_CONFIGURATION : {
 		"Configuration": {
 		  "Summary": true,
@@ -58,12 +56,10 @@ var constants = {
 		  "00000000-0000-0000-0000-000000000000"
 		]
 	  },
-	// ASOC_GET_HTML_ISSUE_DETAILS: "api/v2/Reports/Security/Application/{APPID}"
 
 	//JIRA APIs
 	JIRA_PING_API: "/rest/api/latest/mypermissions",
 	JIRA_ATTACH_FILE: "/rest/api/latest/issue/{JIRAID}/attachments",
-	// JIRA_CREATE_TICKET: "/rest/api/latest/issue",
 	JIRA_CREATE_TICKET: "/rest/api/2/issue",
 	JIRA_LATEST_ISSUE : "/rest/api/2/search?jql=status=Done%20AND%20updated%20>=%20-{SYNCINTERVAL}&maxResults=100",
 
