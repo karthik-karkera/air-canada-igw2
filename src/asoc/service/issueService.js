@@ -9,7 +9,11 @@ var methods = {};
 methods.getIssuesOfApplication = async (appId, token) => {
     const appDetails = await methods.getApplicationDetails(appId, token);
     const url = constants.ASOC_ISSUES_APPLICATION.replace("{APPID}", appDetails.data.Id);
-    return await util.httpCall("GET", token, url);
+    let appData = await util.httpCall("GET", token, url);
+    if(appData.code == 200){
+        appData.data.applicationName = appDetails?.data?.Name || '';
+    }
+    return appData;
 };
 
 methods.getIssuesOfScan = async (scanId, token) => {

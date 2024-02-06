@@ -75,10 +75,10 @@ methods.filterIssues = async (issues, imConfig) => {
     return filteredIssues;
 }
 
-methods.createImTickets = async (filteredIssues, imConfig, providerId, applicationId) => {
+methods.createImTickets = async (filteredIssues, imConfig, providerId, applicationId, applicationName) => {
     var result;
     if (providerId === constants.DTS_JIRA)
-        result = await jiraService.createTickets(filteredIssues, imConfig, applicationId);
+        result = await jiraService.createTickets(filteredIssues, imConfig, applicationId, applicationName);
 
     return result;
 }
@@ -574,7 +574,7 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
                 
                 // Replace Count in Issue Title 
                 if (sectionHtml.text().includes('Audit Trail')) {
-                    sectionHtml.find('.h3group h3').text('Issue 1 of 1 - Audit Trail');
+                    sectionHtml.find('.h3group h3').text('Issue 1 of 1 - Details');
                 } else if (sectionHtml.text().includes('Details')) {
                     sectionHtml.find('.h3group h3').text('Issue 1 of 1 - Details');
                 } else if (sectionHtml.text().includes('Discussion')) {

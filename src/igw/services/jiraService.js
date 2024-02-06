@@ -12,12 +12,12 @@ methods.jiraValidateToken = async (token) => {
     return await util.httpImCall(imConfig); 
 };
 
-methods.createTickets = async (issues, imConfigObject, applicationId) => {
+methods.createTickets = async (issues, imConfigObject, applicationId, applicationName) => {
     var output = {};
     var success = [];
     var failures = [];
     for (var i=0; i<issues.length; i++){
-        const imPayload = await createPayload(issues[i], imConfigObject, applicationId); //LAST
+        const imPayload = await createPayload(issues[i], imConfigObject, applicationId, applicationName); 
         try {
             var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+imConfigObject.imPassword);
             const imConfig = getConfig("POST", basicToken, imConfigObject.imurl+constants.JIRA_CREATE_TICKET, imPayload);
@@ -41,14 +41,14 @@ methods.createTickets = async (issues, imConfigObject, applicationId) => {
     return output;
 };
 
-createPayload = async (issue, imConfigObject, applicationId) => {
+createPayload = async (issue, imConfigObject, applicationId, applicationName) => {
     if(typeof imConfigObject.improjectkey == 'string'){
     var payload = {};
     var attrMap = {};
     attrMap["project"] = {"key" : imConfigObject.improjectkey};
     attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
-        attrMap["summary"] = "Security issue: "+ issue["IssueType"] + " found by AppScan";
+        attrMap["summary"] = applicationName + " - " + issue["IssueType"] + " found by AppScan";
     }else{
         attrMap["summary"] = "Security issue: "+ issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
     }
@@ -71,26 +71,26 @@ createPayload = async (issue, imConfigObject, applicationId) => {
         attrMap["project"] = {"key" : imConfigObject.improjectkey[applicationId] == undefined ? imConfigObject.improjectkey['default'] : imConfigObject.improjectkey[applicationId]};
         attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
         if(process.env.APPSCAN_PROVIDER == "ASOC"){
-            attrMap["summary"] = "Security issue: "+ issue["IssueType"] + " found by AppScan";
+            attrMap["summary"] = applicationName + " - " + issue["IssueType"] + " found by AppScan";
         }else{
             attrMap["summary"] = "Security issue: "+ issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
         }
         attrMap["description"] = JSON.stringify(issue, null, 4);
         const attributeMappings = typeof imConfigObject.attributeMappings != 'undefined' ? imConfigObject.attributeMappings : [];
-     
+        let labelName = applicationName.trim();
+        labelName = labelName.split(/\s+/).join('_')
         for(var i=0; i<attributeMappings.length; i++) {
             if(attributeMappings[i].type === 'Array'){
-                attrMap[attributeMappings[i].imAttr] = [issue[attributeMappings[i].appScanAttr] || ''];
+                attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
             }
             else{
-                attrMap[attributeMappings[i].imAttr] = issue[attributeMappings[i].appScanAttr];    
+                attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];    
             }
         }
         payload["fields"] = attrMap;
         return payload;
     }
 }
-
 methods.attachIssueDataFile = async (ticket, filePath, imConfigObject) => {
     const url = imConfigObject.imurl+constants.JIRA_ATTACH_FILE.replace("{JIRAID}",ticket);
     const formData = new FormData();

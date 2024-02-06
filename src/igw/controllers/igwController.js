@@ -248,9 +248,10 @@ startCron = async (providerId, syncinterval) => {
             if(process.env.APPSCAN_PROVIDER == 'ASOC'){
                 if (scan.AppId){
                     const token = await appscanLoginController();
+                    let appName = scan.AppName || ''
                     if (typeof token === 'undefined') logger.error('Not a valid token')
                     else{
-                        const issuesData = await pushIssuesOfScan(scan.Id, scan.AppId, token, providerId);
+                        const issuesData = await pushIssuesOfScan(scan.Id, scan.AppId, appName, token, providerId);
                         if (typeof issuesData != 'undefined') output.push(issuesData);
                     }
                 } 
@@ -354,7 +355,9 @@ methods.pushJobForScan = async (req, res) => {
         const data = result.data;
         const applicationId = process.env.APPSCAN_PROVIDER == 'ASE' ? data.applicationId : data?.Items[0]?.ApplicationId;
         if (typeof applicationId != 'undefined'){
-            const output = await pushIssuesOfScan(scanId, applicationId, token, process.env.IM_PROVIDER);
+            var issues = await getIssuesOfApplication(applicationId, token);
+            let applicationName = issues.applicationName != undefined ? issues.applicationName : '';
+            const output = await pushIssuesOfScan(scanId, applicationId, applicationName, token, process.env.IM_PROVIDER);
             logger.info(JSON.stringify(output, null, 4));
             return res.status(200).json(output);
         }
@@ -376,14 +379,14 @@ methods.pushJobForApplication = async (req, res) => {
     return res.status(200).json(output);
 }
 
-pushIssuesOfScan = async (scanId, applicationId, token, providerId) => {
+pushIssuesOfScan = async (scanId, applicationId, appName, token, providerId) => {
     var appIssues = process.env.APPSCAN_PROVIDER == 'ASE' ? await getIssuesOfApplication(applicationId, token) : await getIssuesOfScan(scanId, applicationId, token);
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
         appIssues = appIssues.Items 
     }
     const scanIssues = process.env.APPSCAN_PROVIDER == 'ASE' ? appIssues.filter(issue => issue["Scan Name"].replaceAll("&#40;", "(").replaceAll("&#41;", ")").includes("("+scanId+")")) : appIssues.filter(issue => issue["ScanName"] != undefined);
     logger.info(`${appIssues.length} issues found in the scan ${scanId} and the scan is associated to the application ${applicationId}`);
-    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, scanIssues, token);
+    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, appName, scanIssues, token);
     pushedIssuesResult["scanId"]=scanId;
     pushedIssuesResult["syncTime"]=new Date();
     return pushedIssuesResult;
@@ -391,20 +394,21 @@ pushIssuesOfScan = async (scanId, applicationId, token, providerId) => {
 
 pushIssuesOfApplication = async (applicationId, token, providerId) => {
     var issues = await getIssuesOfApplication(applicationId, token);
+    let applicationName = issues.applicationName != undefined ? issues.applicationName : '';
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
         issues = issues?.Items && issues?.Items.length > 0 ? issues.Items : []
     }
     logger.info(`${issues.length} issues found in the application ${applicationId}`);
-    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, issues, token);
+    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, applicationName, issues, token);
     pushedIssuesResult["applicationId"]=applicationId;
     pushedIssuesResult["syncTime"]=new Date();
     return pushedIssuesResult;
 }
 
-createImTickets = async (filteredIssues, imConfig, providerId, applicationId) => {
+createImTickets = async (filteredIssues, imConfig, providerId, applicationId, applicationName) => {
     var result = [];
     try {
-        result = await igwService.createImTickets(filteredIssues, imConfig, providerId, applicationId);   
+        result = await igwService.createImTickets(filteredIssues, imConfig, providerId, applicationId, applicationName);   
         if(typeof result === 'undefined' || typeof result.success === 'undefined') result = [];
     } catch (error) {
         logger.error(`Creating tickets in the ${providerId} failed with error ${error}`);
@@ -412,7 +416,7 @@ createImTickets = async (filteredIssues, imConfig, providerId, applicationId) =>
     return result;
 }
 
-pushIssuesToIm = async (providerId, applicationId, issues, token) => {
+pushIssuesToIm = async (providerId, applicationId, applicationName, issues, token) => {
     const folderName1 = 'temp';
     const folderName2 = 'tempReports';
 
@@ -437,7 +441,7 @@ pushIssuesToIm = async (providerId, applicationId, issues, token) => {
     }
     
     logger.info(`Issues count after filtering is ${filteredIssues.length}`);
-    const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId, applicationId);
+    const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId, applicationId, applicationName);
     const successArray = (typeof imTicketsResult.success === 'undefined') ? [] : imTicketsResult.success;
     let count = 0
     let refreshedToken = await appscanLoginController();
