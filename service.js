@@ -8,7 +8,10 @@ const serviceName = "IssueGateway2";
 var issueGatewayService = new service({
     name: 'IssueGateway2',
     description: 'Interface to integrate SailPoint and AppScan',
-    script: appFilePath
+    script: appFilePath,
+    nodeOptions: [
+        '--openssl-legacy-provider'
+    ]
 });
 
 issueGatewayService._directory =  path.resolve();
