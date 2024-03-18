@@ -18,6 +18,31 @@
             "imAttr": "labels",
             "appScanAttr": "Application Name",
             "type": "Array"
+        },
+        {
+            "imAttr": "customfield_10039",
+            "appScanAttr": "Application Name",
+            "type": "Array"
+        },
+        {
+            "imAttr": "customfield_10040",
+            "appScanAttr": "Status",
+            "type": "Array"
+        },
+        {
+            "imAttr": "customfield_10041",
+            "appScanAttr": "Issue Severity",
+            "type": "Array"
+        },
+        {
+            "imAttr": "customfield_10042",
+            "appScanAttr": "Language", 
+            "type": "Array"
+        },
+        {
+            "imAttr": "customfield_10043",
+            "appScanAttr": "Source",
+            "type": "Array"
         }
     ]
 }
