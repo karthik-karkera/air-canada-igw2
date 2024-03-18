@@ -12,13 +12,17 @@ methods.getImConfigObject = async (providerId) => {
     if (imConfig===null || typeof imConfig === 'undefined'){
         const imFilePath = './config/'+providerId+'.json';
         const imProjectKeyPath = './config/projectKey.json';
+        const imProjectScanKeyPath = './config/projectScanKey.json';
         if (fs.existsSync(imFilePath)){
             try {
                 imConfig = await fsPromise.readFile(imFilePath, 'utf8');  
                 imConfig = JSON.parse(imConfig);
                 imProjectKey = await fsPromise.readFile(imProjectKeyPath, 'utf8'); 
+                imProjectScanKey = await fsPromise.readFile(imProjectScanKeyPath, 'utf8'); 
                 imProjectKey = JSON.parse(imProjectKey);
+                imProjectScanKey = JSON.parse(imProjectScanKey);
                 imConfig['improjectkey'] = imProjectKey;
+                imConfig['improjectscanKey'] = imProjectScanKey;
                 imConfig = JSON.stringify(imConfig, null, 2);
                 imConfigs.set(providerId, imConfig);
             } catch (error) {

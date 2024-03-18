@@ -4,7 +4,7 @@ const constants = require("../../utils/constants");
 var methods = {};
 
 methods.getScanJobDetails = async (jobId, token) => {
-    const url = constants.ASOC_SCAN_DETAILS.replace("{SCANID}", jobId);
+    const url = constants.ASOC_SCAN_ISSUE_DETAILS.replace("{SCANID}", jobId);
     return await util.httpCall("GET", token, url);
 };
 

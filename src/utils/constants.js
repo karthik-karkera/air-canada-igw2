@@ -34,7 +34,8 @@ var constants = {
 	ASOC_CREATE_HTML_ISSUE_DETAILS: "/api/v2/Reports/Security/Application/{APPID}",
 	ASOC_REPORT_STATUS: "/api/V2/Reports/{REPORTID}",
 	ASOC_GET_HTML_ISSUE_DETAILS: "/api/v2/Reports/Download/{REPORTID}",
-	ASOC_SCAN_DETAILS: "/api/v2/Issues/Scan/{SCANID}",
+	ASOC_SCAN_ISSUE_DETAILS: "/api/v2/Issues/Scan/{SCANID}",
+	ASOC_SCAN_DETAILS: "/api/v2/Scans/{SCANID}",
 	CREATE_REPORT_REQUEST_CONFIGURATION : {
 		"Configuration": {
 		  "Summary": true,

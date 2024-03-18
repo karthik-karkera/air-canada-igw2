@@ -386,7 +386,7 @@ pushIssuesOfScan = async (scanId, applicationId, appName, token, providerId) => 
     }
     const scanIssues = process.env.APPSCAN_PROVIDER == 'ASE' ? appIssues.filter(issue => issue["Scan Name"].replaceAll("&#40;", "(").replaceAll("&#41;", ")").includes("("+scanId+")")) : appIssues.filter(issue => issue["ScanName"] != undefined);
     logger.info(`${appIssues.length} issues found in the scan ${scanId} and the scan is associated to the application ${applicationId}`);
-    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, appName, scanIssues, token);
+    const pushedIssuesResult = await pushIssuesToIm(providerId, scanId, applicationId, appName, scanIssues, token);
     pushedIssuesResult["scanId"]=scanId;
     pushedIssuesResult["syncTime"]=new Date();
     return pushedIssuesResult;
@@ -399,7 +399,7 @@ pushIssuesOfApplication = async (applicationId, token, providerId) => {
         issues = issues?.Items && issues?.Items.length > 0 ? issues.Items : []
     }
     logger.info(`${issues.length} issues found in the application ${applicationId}`);
-    const pushedIssuesResult = await pushIssuesToIm(providerId, applicationId, applicationName, issues, token);
+    const pushedIssuesResult = await pushIssuesToIm(providerId, '', applicationId, applicationName, issues, token);
     pushedIssuesResult["applicationId"]=applicationId;
     pushedIssuesResult["syncTime"]=new Date();
     return pushedIssuesResult;
@@ -416,7 +416,18 @@ createImTickets = async (filteredIssues, imConfig, providerId, applicationId, ap
     return result;
 }
 
-pushIssuesToIm = async (providerId, applicationId, applicationName, issues, token) => {
+createImScanTickets = async (filteredIssues, imConfig, providerId, applicationId, applicationName, scanId, discoveryMethod) => {
+    var result = [];
+    try {
+        result = await igwService.createImScanTickets(filteredIssues, imConfig, providerId, applicationId, applicationName, scanId, discoveryMethod);   
+        if(typeof result === 'undefined' || typeof result.success === 'undefined') result = [];
+    } catch (error) {
+        logger.error(`Creating tickets in the ${providerId} failed with error ${error}`);
+    }
+    return result;
+}
+
+pushIssuesToIm = async (providerId, scanId, applicationId, applicationName, issues, token) => {
     const folderName1 = 'temp';
     const folderName2 = 'tempReports';
 
@@ -444,6 +455,34 @@ pushIssuesToIm = async (providerId, applicationId, applicationName, issues, toke
     const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId, applicationId, applicationName);
     const successArray = (typeof imTicketsResult.success === 'undefined') ? [] : imTicketsResult.success;
     let count = 0
+    if(process.env.GENERATE_SCAN_HTML_FILE_JIRA == 'true' && scanId != ''){
+        let downloadPath = `./temp/${applicationId}.html`;
+        let discoveryMethod = ''
+        if(filteredIssues.length >0){
+            discoveryMethod = filteredIssues[0].DiscoveryMethod
+        }
+        let scanDetails = await asocIssueService.getScanDetails(scanId, token);
+        if (scanDetails.code === 200 && scanDetails.data !=='undefined') 
+            scanDetails = scanDetails.data;
+        else
+            logger.error(`Fetching details of scan ${scanId} from application ${applicationId} failed with error ${scanDetails.data}`);    
+    
+        const imScanTicketsResult = await createImScanTickets([scanDetails], imConfig, providerId, applicationId, applicationName, scanId, discoveryMethod);
+        const successScanArray = (typeof imScanTicketsResult.success === 'undefined') ? [] : imScanTicketsResult.success;
+        let scanObj = successScanArray[0];
+        let imScanTicket = scanObj.ticket;
+        try {
+            if (require("fs").existsSync(downloadPath)) {
+                await igwService.attachIssueDataFile(imScanTicket, downloadPath, imConfig, providerId);
+            }
+        } catch (error) {
+            logger.error(`Attaching data file for the issueId ${scanId} to ticket ${imScanTicket} failed with an error ${error}`);
+            issueObj["attachIssueDataFileError"] = error;
+        }
+        imScanTicketsResult["scanId"]=scanId;
+        imScanTicketsResult["syncTime"]=new Date();
+        logger.info(JSON.stringify(imScanTicketsResult, null, 4));
+    }
     let refreshedToken = await appscanLoginController();
     for(let j=0; j<successArray.length; j++){
         count++;

@@ -17,6 +17,11 @@ methods.getIssuesOfApplication = async (appId, token) => {
 };
 
 methods.getIssuesOfScan = async (scanId, token) => {
+    const url = constants.ASOC_SCAN_ISSUE_DETAILS.replace("{SCANID}", scanId);
+    return await util.httpCall("GET", token, url);
+};
+
+methods.getScanDetails = async (scanId, token) => {
     const url = constants.ASOC_SCAN_DETAILS.replace("{SCANID}", scanId);
     return await util.httpCall("GET", token, url);
 };

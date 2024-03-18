@@ -83,6 +83,14 @@ methods.createImTickets = async (filteredIssues, imConfig, providerId, applicati
     return result;
 }
 
+methods.createImScanTickets = async (filteredIssues, imConfig, providerId, applicationId, applicationName, scanId, discoveryMethod) => {
+    var result;
+    if (providerId === constants.DTS_JIRA)
+        result = await jiraService.createScanTickets(filteredIssues, imConfig, applicationId, applicationName, scanId, discoveryMethod);
+
+    return result;
+}
+
 methods.getLatestImTickets = async (providerId, syncInterval, imConfig) => {
     var result;
     if (providerId === constants.DTS_JIRA)
@@ -93,8 +101,12 @@ methods.getLatestImTickets = async (providerId, syncInterval, imConfig) => {
 methods.attachIssueDataFile = async (ticket, downloadPath, imConfig, providerId) => {
     var result;
     if (providerId === constants.DTS_JIRA) {
-        result = await jiraService.attachIssueDataFile(ticket.split("/browse/")[1], downloadPath, imConfig);
-        logger.info(`Reports Attached to ${ticket}`)
+        try{
+            result = await jiraService.attachIssueDataFile(ticket.split("/browse/")[1], downloadPath, imConfig);
+            logger.info(`Reports Attached to ${ticket}`)
+        }catch(err){
+            logger.error(err.message)
+        }
         return result
         // try {
         //     let data = fs.readFileSync(downloadPath, 'utf8')
