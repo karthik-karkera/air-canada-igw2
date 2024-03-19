@@ -445,7 +445,7 @@ pushIssuesToIm = async (providerId, scanId, applicationId, applicationName, issu
 
     if(process.env.APPSCAN_PROVIDER == "ASOC" && filteredIssues.length > 0 && process.env.GENERATE_HTML_FILE_JIRA == "true"){
         try{
-            await asocIssueService.downloadAsocReport(providerId, applicationId, issues, token)
+            await asocIssueService.downloadAsocReport(providerId, applicationId, scanId, issues, token)
         }catch(err){
             logger.error(`Downloading ASOC Reports for ${applicationId} failed with error - ${err}`)
         }
@@ -455,12 +455,9 @@ pushIssuesToIm = async (providerId, scanId, applicationId, applicationName, issu
     const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId, applicationId, applicationName);
     const successArray = (typeof imTicketsResult.success === 'undefined') ? [] : imTicketsResult.success;
     let count = 0
-    if(process.env.GENERATE_SCAN_HTML_FILE_JIRA == 'true' && scanId != ''){
+    if(process.env.GENERATE_SCAN_HTML_FILE_JIRA == 'true' && scanId != '' && filteredIssues.length > 0){
         let downloadPath = `./temp/${applicationId}.html`;
-        let discoveryMethod = ''
-        if(filteredIssues.length >0){
-            discoveryMethod = filteredIssues[0].DiscoveryMethod
-        }
+        let discoveryMethod = filteredIssues[0].DiscoveryMethod;
         let scanDetails = await asocIssueService.getScanDetails(scanId, token);
         if (scanDetails.code === 200 && scanDetails.data !=='undefined') 
             scanDetails = scanDetails.data;

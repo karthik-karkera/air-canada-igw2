@@ -85,8 +85,8 @@ methods.getHTMLIssueDetails = async (appId, issueId, downloadPath, token) => {
 
 }
 
-methods.downloadAsocReport = async (providerId, appId, issues, token) => {
-    const createReportUrl = constants.ASOC_CREATE_HTML_ISSUE_DETAILS.replace("{APPID}", appId);
+methods.downloadAsocReport = async (providerId, appId, scanId, issues, token) => {
+    const createReportUrl = constants.ASOC_CREATE_HTML_ISSUE_DETAILS.replace("{SCANID}", scanId);
     const data = constants.CREATE_REPORT_REQUEST_CONFIGURATION; //CREATE ISSUE PAYLOAD
 
     try {

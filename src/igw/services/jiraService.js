@@ -106,21 +106,28 @@ createPayload = async (issue, imConfigObject, applicationId, applicationName) =>
         }else{
             attrMap["summary"] = "Security issue: "+ issue["Issue Type"].replaceAll("&#40;", "(").replaceAll("&#41;", ")") + " found by AppScan";
         }
-        let labelLanguage = issue.Language || '';
-        let labelSource = issue.Source || '';
-        let labelSeverity = issue.Severity || '';
-        let labelStatus = issue.Status || '';
+        
 
         attrMap["description"] = JSON.stringify(issue, null, 4);
         const attributeMappings = typeof imConfigObject.attributeMappings != 'undefined' ? imConfigObject.attributeMappings : [];
+        
         let labelName = applicationName.trim();
+        let labelLanguage = issue?.Language != null || issue?.Language != undefined ? issue?.Language.trim() || '' : '';
+        let labelSource = issue?.Source != null || issue?.Source != undefined ? issue?.Source.trim() || '' : '';
+        let labelSeverity = issue?.Severity != null || issue?.Severity != undefined ? issue?.Severity.trim() || '' : '';
+        let labelStatus = issue?.Status != null || issue?.Status != undefined ? issue?.Status.trim() || '' : '';
+
         labelName = labelName.split(/\s+/).join('_');
+        labelLanguage = labelLanguage.split(/\s+/).join('_');
+        labelSource = labelSource.split(/\s+/).join('_');
+        labelSeverity = labelSeverity.split(/\s+/).join('_');
+        labelStatus = labelStatus.split(/\s+/).join('_');
 
         for(var i=0; i<attributeMappings.length; i++) {
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
-                }else if(attributeMappings[i].imAttr == 'customfield_10039'){
+                }else if(attributeMappings[i].imAttr == 'customfield_10046'){
                     attrMap[attributeMappings[i].imAttr] = [applicationName];
                 }else if(attributeMappings[i].imAttr == 'customfield_10040'){
                     attrMap[attributeMappings[i].imAttr] = [labelStatus];
@@ -183,7 +190,7 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
-                }else if(attributeMappings[i].imAttr == 'customfield_10039'){
+                }else if(attributeMappings[i].imAttr == 'customfield_10046'){
                     attrMap[attributeMappings[i].imAttr] = [labelName];
                 }
             }
