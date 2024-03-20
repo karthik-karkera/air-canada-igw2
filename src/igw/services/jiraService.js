@@ -127,15 +127,15 @@ createPayload = async (issue, imConfigObject, applicationId, applicationName) =>
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
-                }else if(attributeMappings[i].imAttr == 'customfield_10046'){
+                }else if(attributeMappings[i].imAttr == 'customfield_10510'){
                     attrMap[attributeMappings[i].imAttr] = [labelName];
                 }else if(attributeMappings[i].imAttr == 'customfield_10040'){
                     attrMap[attributeMappings[i].imAttr] = [labelStatus];
-                }else if(attributeMappings[i].imAttr == 'customfield_10041'){
+                }else if(attributeMappings[i].imAttr == 'customfield_10158'){
                     attrMap[attributeMappings[i].imAttr] = [labelSeverity];
-                }else if(attributeMappings[i].imAttr == 'customfield_10042'){
+                }else if(attributeMappings[i].imAttr == 'customfield_11117'){
                     attrMap[attributeMappings[i].imAttr] = [labelLanguage];
-                }else if(attributeMappings[i].imAttr == 'customfield_10043'){
+                }else if(attributeMappings[i].imAttr == 'customfield_10074'){
                     attrMap[attributeMappings[i].imAttr] = [labelSource];
                 }
             }
@@ -192,7 +192,7 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
-                }else if(attributeMappings[i].imAttr == 'customfield_10046'){
+                }else if(attributeMappings[i].imAttr == 'customfield_10510'){
                     attrMap[attributeMappings[i].imAttr] = [labelName];
                 }
             }

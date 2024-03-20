@@ -20,7 +20,7 @@
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10039",
+            "imAttr": "customfield_10510",
             "appScanAttr": "Application Name",
             "type": "Array"
         },
@@ -30,17 +30,17 @@
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10041",
+            "imAttr": "customfield_10158",
             "appScanAttr": "Issue Severity",
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10042",
+            "imAttr": "customfield_11117",
             "appScanAttr": "Language", 
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10043",
+            "imAttr": "customfield_10074",
             "appScanAttr": "Source",
             "type": "Array"
         }
