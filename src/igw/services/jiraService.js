@@ -128,7 +128,7 @@ createPayload = async (issue, imConfigObject, applicationId, applicationName) =>
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
                 }else if(attributeMappings[i].imAttr == 'customfield_10046'){
-                    attrMap[attributeMappings[i].imAttr] = [applicationName];
+                    attrMap[attributeMappings[i].imAttr] = [labelName];
                 }else if(attributeMappings[i].imAttr == 'customfield_10040'){
                     attrMap[attributeMappings[i].imAttr] = [labelStatus];
                 }else if(attributeMappings[i].imAttr == 'customfield_10041'){
@@ -154,6 +154,7 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
     var attrMap = {};
     attrMap["project"] = {"key" : imConfigObject.improjectkey};
     attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
+    // attrMap["issuetype"] = {"name" : 'Task'};
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
         attrMap["summary"] = applicationName + " - " + issue["IssueType"] + " found by AppScan";
     }else{
@@ -177,6 +178,7 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
         var attrMap = {};
         attrMap["project"] = {"key" : imConfigObject.improjectkey[applicationId] == undefined ? imConfigObject.improjectkey['default'] : imConfigObject.improjectkey[applicationId]};
         attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
+        // attrMap["issuetype"] = {"name" : 'Task'};
         if(process.env.APPSCAN_PROVIDER == "ASOC"){
             attrMap["summary"] = discoveryMethod + ' - ' + applicationName + " - " + scanId + " scanned by ASOC";
         }else{
