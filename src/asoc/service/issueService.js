@@ -102,6 +102,7 @@ methods.downloadAsocReport = async (providerId, appId, scanId, issues, token) =>
             return new Promise(
                 function (resolve) {
                     return intervalid = setInterval(async () => {
+                    try{
                         let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
                         if (getDownloadUrl.data.Status == 'Ready') {
                             let downloadFileData = await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
@@ -111,6 +112,9 @@ methods.downloadAsocReport = async (providerId, appId, scanId, issues, token) =>
                                 resolve(res)
                             }
                         }
+                    }catch(err){
+                        logger.error(err)
+                    }
                     }, 3000)
                 }
             )
