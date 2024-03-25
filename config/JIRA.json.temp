@@ -20,28 +20,28 @@
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10510",
+            "imAttr": "customfield_11292",
             "appScanAttr": "Application Name",
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10040",
-            "appScanAttr": "Status",
+            "imAttr": "customfield_13096",
+            "appScanAttr": "App Scan Bug testing Status",
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10158",
-            "appScanAttr": "Issue Severity",
+            "imAttr": "customfield_13094",
+            "appScanAttr": "App Scan Severity",
             "type": "Array"
         },
         {
-            "imAttr": "customfield_11117",
-            "appScanAttr": "Language", 
+            "imAttr": "customfield_13093",
+            "appScanAttr": "Source Code Language", 
             "type": "Array"
         },
         {
-            "imAttr": "customfield_10074",
-            "appScanAttr": "Source",
+            "imAttr": "customfield_13095",
+            "appScanAttr": "App Scan Issue Source",
             "type": "Array"
         }
     ]

@@ -274,12 +274,14 @@ startCron = async (providerId, syncinterval) => {
 }
 
 startProviderCron = async (providerId, syncinterval) => {
+    try{
     const token = await appscanLoginController();
     const completedScans = await getLatestProviderTickets(providerId, syncinterval);
 
     if(completedScans?.total > 0){
         const updatedResults = await Promise.all(
             completedScans.issues.map(async (res) => {
+                if(res.fields.summary.includes('found by AppScan')){
                 let description = JSON.parse(res.fields.description);
                 let issueId = description.Id; 
                 let applicationId = description.ApplicationId;
@@ -292,8 +294,12 @@ startProviderCron = async (providerId, syncinterval) => {
                 }catch (error) {
                     logger.error(error)
                 }
+                }
             })
         );
+    }
+    }catch(err){
+        logger.error(`Fetching Updated Tickets from ${providerId} Failed ${err}`)
     }
 }
 

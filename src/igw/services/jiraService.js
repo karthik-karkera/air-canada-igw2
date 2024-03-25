@@ -24,16 +24,16 @@ methods.createTickets = async (issues, imConfigObject, applicationId, applicatio
             const result = await util.httpImCall(imConfig); 
             await delay(3000);
             if (result.code === 201){
-                const imTikcket = imConfigObject.imurl+"/browse/"+result.data.key;
-                process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({issueId: issues[i]["Id"], ticket: imTikcket}) : success.push({issueId: issues[i]["id"], ticket: imTikcket});
+                const imTicket = imConfigObject.imurl+"/browse/"+result.data.key;
+                process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({issueId: issues[i]["Id"], ticket: imTicket}) : success.push({issueId: issues[i]["id"], ticket: imTicket});
             }
             else {
                 process.env.APPSCAN_PROVIDER == "ASOC" ? failures.push({issueId: issues[i]["Id"], errorCode: result.code, errorMsg: result.data}) : failures.push({issueId: issues[i]["id"], errorCode: result.code, errorMsg: result.data});
-                logger.error(`Failed to create ticket for issue Id ${issues[i]["id"]} and the error is ${result.data}`);
+                logger.error(`Failed to create ticket for issue Id ${issues[i]["Id"]} and the error is ${result.data}`);
             }
         } catch (error) {
-            logger.error(`Failed to create ticket for issue Id ${issues[i]["id"]} and the error is ${JSON.stringify(error.response.data)}`);
-            failures.push({issueId: issues[i]["id"], errorMsg: error.message});
+            logger.error(`Failed to create ticket for issue Id ${issues[i]["Id"]} and the error is ${JSON.stringify(error.response.data)}`);
+            failures.push({issueId: issues[i]["Id"], errorMsg: error.message});
         }
     }
     output["success"]=success;
@@ -55,15 +55,15 @@ methods.createScanTickets = async (issues, imConfigObject, applicationId, applic
             const result = await util.httpImCall(imConfig); 
             await delay(3000);
             if (result.code === 201){
-                const imTikcket = imConfigObject.imurl+"/browse/"+result.data.key;
-                process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({scanId: scanId, ticket: imTikcket}) : success.push({scanId: scanId, ticket: imTikcket});
+                const imTicket = imConfigObject.imurl+"/browse/"+result.data.key;
+                process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({scanId: scanId, ticket: imTicket}) : success.push({scanId: scanId, ticket: imTicket});
             }
             else {
                 process.env.APPSCAN_PROVIDER == "ASOC" ? failures.push({scanId: scanId, errorCode: result.code, errorMsg: result.data}) : failures.push({scanId: scanId, errorCode: result.code, errorMsg: result.data});
-                logger.error(`Failed to create ticket for issue Id ${scanId} and the error is ${result.data}`);
+                logger.error(`Failed to create ticket for scan Id ${scanId} and the error is ${result.data}`);
             }
         } catch (error) {
-            logger.error(`Failed to create ticket for issue Id ${scanId} and the error is ${JSON.stringify(error.response.data)}`);
+            logger.error(`Failed to create ticket for scan Id ${scanId} and the error is ${JSON.stringify(error.response.data)}`);
             failures.push({scanId: scanId, errorMsg: error.message});
         }
     }
@@ -127,16 +127,16 @@ createPayload = async (issue, imConfigObject, applicationId, applicationName) =>
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
-                }else if(attributeMappings[i].imAttr == 'customfield_10510'){
-                    attrMap[attributeMappings[i].imAttr] = [labelName];
-                }else if(attributeMappings[i].imAttr == 'customfield_10040'){
-                    attrMap[attributeMappings[i].imAttr] = [labelStatus];
-                }else if(attributeMappings[i].imAttr == 'customfield_10158'){
-                    attrMap[attributeMappings[i].imAttr] = [labelSeverity];
-                }else if(attributeMappings[i].imAttr == 'customfield_11117'){
-                    attrMap[attributeMappings[i].imAttr] = [labelLanguage];
-                }else if(attributeMappings[i].imAttr == 'customfield_10074'){
-                    attrMap[attributeMappings[i].imAttr] = [labelSource];
+                }else if(attributeMappings[i].imAttr == 'customfield_11292'){
+                    attrMap[attributeMappings[i].imAttr] = `${labelName}`
+                }else if(attributeMappings[i].imAttr == 'customfield_13096'){
+                    attrMap[attributeMappings[i].imAttr] = `${labelStatus}`;
+                }else if(attributeMappings[i].imAttr == 'customfield_13094'){
+                    attrMap[attributeMappings[i].imAttr] = `${labelSeverity}`;
+                }else if(attributeMappings[i].imAttr == 'customfield_13093'){
+                    attrMap[attributeMappings[i].imAttr] = `${labelLanguage}`;
+                }else if(attributeMappings[i].imAttr == 'customfield_13095'){
+                    attrMap[attributeMappings[i].imAttr] = `${labelSource}`;
                 }
             }
             else{
@@ -154,7 +154,7 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
     var attrMap = {};
     attrMap["project"] = {"key" : imConfigObject.improjectkey};
     attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
-    // attrMap["issuetype"] = {"name" : 'Task'};
+
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
         attrMap["summary"] = applicationName + " - " + issue["IssueType"] + " found by AppScan";
     }else{
@@ -178,7 +178,7 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
         var attrMap = {};
         attrMap["project"] = {"key" : imConfigObject.improjectkey[applicationId] == undefined ? imConfigObject.improjectkey['default'] : imConfigObject.improjectkey[applicationId]};
         attrMap["issuetype"] = {"name" : imConfigObject.imissuetype};
-        // attrMap["issuetype"] = {"name" : 'Task'};
+        attrMap["issuetype"] = {"name" : 'Task'};
         if(process.env.APPSCAN_PROVIDER == "ASOC"){
             attrMap["summary"] = discoveryMethod + ' - ' + applicationName + " - " + scanId + " scanned by ASOC";
         }else{
@@ -192,8 +192,8 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
-                }else if(attributeMappings[i].imAttr == 'customfield_10510'){
-                    attrMap[attributeMappings[i].imAttr] = [labelName];
+                }else if(attributeMappings[i].imAttr == 'customfield_10065'){
+                    attrMap[attributeMappings[i].imAttr] = `${labelName}`
                 }
             }
             else{
