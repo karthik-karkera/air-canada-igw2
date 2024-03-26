@@ -192,7 +192,7 @@ createScanPayload = async (issue, imConfigObject, applicationId, applicationName
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
                 attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
-                }else if(attributeMappings[i].imAttr == 'customfield_10065'){
+                }else if(attributeMappings[i].imAttr == 'customfield_11292'){
                     attrMap[attributeMappings[i].imAttr] = `${labelName}`
                 }
             }
