@@ -631,4 +631,144 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+methods.labelsSync = async (req, res) => {
+    let token = await appscanLoginController();
+    let limit = req.query.limit || 5;
+    let arrayList = { success: [], failure: [] };
+
+    let projectName = req.query.project;
+    let providerId = req.query.providerId;
+    try {
+        let imConfig = await getIMConfig(providerId);
+        const result = await fetchAllData(igwService.getLatestImTicketsByProject, providerId, projectName, imConfig);
+
+        if (result.code == 200) {
+            let data = result.data.issues;
+
+            for (let i = 0; i < 650; i++) {
+                try {
+                    let labelList = [];
+                    let attrMap = {};
+                    let payload = {}
+                    let projectKey = data[i].key;
+
+                    const parsedDescription = JSON.parse(data[i]?.fields?.description);
+                    let applicationId = parsedDescription?.ApplicationId;
+                    let issueId = parsedDescription?.Id;
+                    
+                    if (data[i]?.fields?.customfield_10061 == null) {
+                        labelList.push("customfield_10061");
+                    }
+                    if (data[i]?.fields?.customfield_10062 == null) {
+                        labelList.push("customfield_10062");
+                    }
+                    if (data[i]?.fields?.customfield_10063 == null) {
+                        labelList.push("customfield_10063");
+                    }
+                    if (data[i]?.fields?.customfield_10064 == null) {
+                        labelList.push("customfield_10064");
+                    }
+                    if (data[i]?.fields?.customfield_10065 == null) {
+                        labelList.push("customfield_10065");
+                    }
+                    if (data[i]?.fields?.labels.length == 0){
+                        labelList.push("labels");
+                    }
+                    if (labelList.length > 0) {
+                        try {
+                            let getApplicationName = await getIssuesOfApplication(applicationId, token);
+                            let applicationName = getApplicationName.applicationName != undefined ? getApplicationName.applicationName : '';
+                            let issueData = await asocIssueService.getIssueDetails(applicationId, issueId, token);
+                            let attributeMappings = typeof imConfig.attributeMappings != 'undefined' ? imConfig.attributeMappings : [];
+
+                            if (issueData.code == 200 && issueData.data) {
+                                issueData = issueData.data;
+                                labelName = applicationName
+                                let labelLanguage = issueData?.Language != null || issueData?.Language != undefined ? issueData?.Language.trim() || '' : '';
+                                let labelSource = issueData?.Source != null || issueData?.Source != undefined ? issueData?.Source.trim() || '' : '';
+                                let labelSeverity = issueData?.Severity != null || issueData?.Severity != undefined ? issueData?.Severity.trim() || '' : '';
+                                let labelStatus = issueData?.Status != null || issueData?.Status != undefined ? issueData?.Status.trim() || '' : '';
+
+                                labelName = labelName.split(/\s+/).join('_');
+                                labelLanguage = labelLanguage.split(/\s+/).join('_');
+                                labelSource = labelSource.split(/\s+/).join('_');
+                                labelSeverity = labelSeverity.split(/\s+/).join('_');
+                                labelStatus = labelStatus.split(/\s+/).join('_');
+
+                                for (let j = 0; j < attributeMappings.length; j++) {
+                                    if (attributeMappings[j].type === 'Array' && labelList.includes(attributeMappings[j].imAttr)) {
+                                        if (attributeMappings[j].imAttr == 'labels') {
+                                            attrMap[attributeMappings[j].imAttr] = [labelName || '', applicationId];
+                                        } else if (attributeMappings[j].imAttr == 'customfield_10065') {
+                                            attrMap[attributeMappings[j].imAttr] = `${labelName}`
+                                        } else if (attributeMappings[j].imAttr == 'customfield_10061') {
+                                            attrMap[attributeMappings[j].imAttr] = `${labelStatus}`;
+                                        } else if (attributeMappings[j].imAttr == 'customfield_10062') {
+                                            attrMap[attributeMappings[j].imAttr] = `${labelSeverity}`;
+                                        } else if (attributeMappings[j].imAttr == 'customfield_10063') {
+                                            attrMap[attributeMappings[j].imAttr] = `${labelLanguage}`;
+                                        } else if (attributeMappings[j].imAttr == 'customfield_10064') {
+                                            attrMap[attributeMappings[j].imAttr] = `${labelSource}`;
+                                        }
+                                    }
+                                    // else {
+                                    //     attrMap[attributeMappings[j].imAttr] = [labelName || '', applicationId];
+                                    // }
+                                }
+                                payload["fields"] = attrMap;
+                                let result = await igwService.updateImTickets(payload, imConfig, providerId, applicationId, projectKey);
+                                arrayList.failure = [...arrayList.failure, ...result.failure]
+                                arrayList.success = [...arrayList.success, ...result.success]
+                            }
+                        } catch (error) {
+                            arrayList.failure = [...arrayList.failure, { projectKey, errorCode: error.response.status, errorMsg: error.response.statusText }]
+                            logger.error(`Failed to update labels for ${projectKey} failed with error ${error}`)
+                        }
+                    }
+                }
+                catch (err) {
+                    logger.error(`Failed to update labels with error ${err}`)
+                }
+            }
+
+        }
+        logger.info(arrayList)
+        res.send(arrayList)
+    } catch (err) {
+        logger.error(err);
+        res.status(404).json({ err: `Failed to update labels with error ${err}`})
+    }
+}
+
+
+const fetchAllData = async (serviceName, providerId, projectName, imConfig) => {
+    let skipValue = 0;
+    let result = {};
+    try {
+        while (true) {
+            try {
+                let resData = await serviceName(providerId, projectName, imConfig, skipValue);
+                if (resData.data.total <= skipValue) {
+                    break;
+                }
+
+                if (resData && Object.keys(result).length == 0 && resData.data.issues.length >= 0) {
+                    result = resData;
+                } else if (resData && resData.data.issues.length > 0) {
+                    result.data.issues = [...resData?.data?.issues, ...result.data.issues]
+                }
+                if (skipValue > 15000) break;
+            }
+            catch (err) {
+                logger.error(err?.response?.data.Message || err.message)
+            }
+            skipValue += 100;
+        }
+        return result;
+    } catch (error) {
+        console.error('Error fetching applications:', error);
+        throw error;
+    }
+};
+
 module.exports = methods;

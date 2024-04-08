@@ -62,7 +62,9 @@ var constants = {
 	JIRA_PING_API: "/rest/api/latest/mypermissions",
 	JIRA_ATTACH_FILE: "/rest/api/latest/issue/{JIRAID}/attachments",
 	JIRA_CREATE_TICKET: "/rest/api/2/issue",
+	JIRA_UPDATE_TICKET: "/rest/api/2/issue/{JIRAID}",
 	JIRA_LATEST_ISSUE : "/rest/api/2/search?jql=status=Done%20AND%20updated%20>=%20-{SYNCINTERVAL}&maxResults=100",
+	JIRA_LABELS_ISSUE : "/rest/api/2/search?jql=project%20=%20{PROJECTNAME}%20AND%20summary%20~%20%27found%20by%20Appscan%27&maxResults=100&startAt={SKIPVALUE}",
 
 	INVALID_ADMIN_EMAIL: "Invalid admin email",
 	INVALID_ADMIN_PASSWORD: "Invalid admin password",

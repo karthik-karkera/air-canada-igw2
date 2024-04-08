@@ -41,6 +41,35 @@ methods.createTickets = async (issues, imConfigObject, applicationId, applicatio
     return output;
 };
 
+methods.updateTickets = async (bodyData, imConfigObject, applicationId, projectKey) => {
+    var output = {};
+    var success = [];
+    var failures = [];
+    const imPayload = bodyData;
+    
+    try {
+        var basicToken = "Basic " + btoa(imConfigObject.imUserName + ":" + imConfigObject.imPassword);
+        let imUrl = (imConfigObject.imurl + constants.JIRA_UPDATE_TICKET).replace("{JIRAID}", projectKey)
+        const imTicket = imConfigObject.imurl + "/browse/" + projectKey;
+        const imConfig = getConfig("PUT", basicToken, imUrl, imPayload);
+        const result = await util.httpImCall(imConfig);
+        await delay(300);                                  //change to 3000 --------------
+        if (result.code === 204) {
+            process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({ ticket: imTicket, bodyData: JSON.stringify(bodyData) }) : success.push({ issueId: issues[i]["id"], ticket: imTicket });
+        }
+        else {
+            process.env.APPSCAN_PROVIDER == "ASOC" ? failures.push({ ticket: imTicket, errorCode: result.code, errorMsg: result.data }) : failures.push({ issueId: issues[i]["id"], errorCode: result.code, errorMsg: result.data });
+            logger.error(`Failed to create ticket for Project Key -  ${projectKey} and the error is ${result.data}`);
+        }
+    } catch (error) {
+        logger.error(`Failed to create ticket for Project Key - ${projectKey} and the error is ${JSON.stringify(error.response.data)}`);
+        failures.push({ ticket: imTicket, errorMsg: error.message });
+    }
+    output["success"] = success;
+    output["failure"] = failures;
+    return output;
+};
+
 methods.createScanTickets = async (issues, imConfigObject, applicationId, applicationName, scanId, discoveryMethod) => {
     var output = {};
     var success = [];
@@ -217,6 +246,14 @@ methods.attachIssueDataFile = async (ticket, filePath, imConfigObject) => {
 methods.getMarkedTickets = async (syncInterval, imConfigObject) => {
     const url = imConfigObject.imurl + constants.JIRA_LATEST_ISSUE.replace("{SYNCINTERVAL}",syncInterval)
     const formData = new FormData();
+    let userData = imConfigObject.imUserName +":"+imConfigObject.imPassword;
+    var basicToken = `Basic ${Buffer.from(userData).toString('base64')}`;
+    const imConfig = getConfig("GET", basicToken, url, "");
+    return await util.httpImCall(imConfig); 
+}
+
+methods.getTicketsByProject = async (projectName, imConfigObject, skipValue) => {
+    const url = imConfigObject.imurl + constants.JIRA_LABELS_ISSUE.replace("{PROJECTNAME}",projectName).replace("{SKIPVALUE}", skipValue)
     let userData = imConfigObject.imUserName +":"+imConfigObject.imPassword;
     var basicToken = `Basic ${Buffer.from(userData).toString('base64')}`;
     const imConfig = getConfig("GET", basicToken, url, "");

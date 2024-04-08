@@ -83,6 +83,14 @@ methods.createImTickets = async (filteredIssues, imConfig, providerId, applicati
     return result;
 }
 
+methods.updateImTickets = async (bodyData, imConfig, providerId, applicationId, projectKey) => {
+    var result;
+    if (providerId === constants.DTS_JIRA)
+        result = await jiraService.updateTickets(bodyData, imConfig, applicationId, projectKey);
+
+    return result;
+}
+
 methods.createImScanTickets = async (filteredIssues, imConfig, providerId, applicationId, applicationName, scanId, discoveryMethod) => {
     var result;
     if (providerId === constants.DTS_JIRA)
@@ -95,6 +103,13 @@ methods.getLatestImTickets = async (providerId, syncInterval, imConfig) => {
     var result;
     if (providerId === constants.DTS_JIRA)
         result = await jiraService.getMarkedTickets(syncInterval, imConfig);
+    return result;
+}
+
+methods.getLatestImTicketsByProject = async (providerId, projectName, imConfig, skipValue) => {
+    var result;
+    if (providerId === constants.DTS_JIRA)
+        result = await jiraService.getTicketsByProject(projectName, imConfig, skipValue);
     return result;
 }
 
