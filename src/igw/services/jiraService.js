@@ -53,7 +53,7 @@ methods.updateTickets = async (bodyData, imConfigObject, applicationId, projectK
         const imTicket = imConfigObject.imurl + "/browse/" + projectKey;
         const imConfig = getConfig("PUT", basicToken, imUrl, imPayload);
         const result = await util.httpImCall(imConfig);
-        await delay(300);                                  //change to 3000 --------------
+        await delay(3000);                                  
         if (result.code === 204) {
             process.env.APPSCAN_PROVIDER == "ASOC" ? success.push({ ticket: imTicket, bodyData: JSON.stringify(bodyData) }) : success.push({ issueId: issues[i]["id"], ticket: imTicket });
         }
