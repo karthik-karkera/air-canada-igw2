@@ -91,6 +91,15 @@ methods.updateImTickets = async (bodyData, imConfig, providerId, applicationId, 
     return result;
 }
 
+methods.updateImStatus = async (providerId, imConfig, bodyData, projectKey) => {
+    let result;
+    if (providerId === constants.DTS_JIRA){
+        result = await jiraService.updateImStatus(imConfig, bodyData, projectKey);
+    }
+
+    return result;
+}
+
 methods.createImScanTickets = async (filteredIssues, imConfig, providerId, applicationId, applicationName, scanId, discoveryMethod) => {
     var result;
     if (providerId === constants.DTS_JIRA)

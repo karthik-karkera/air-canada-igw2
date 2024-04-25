@@ -70,6 +70,17 @@ methods.updateTickets = async (bodyData, imConfigObject, applicationId, projectK
     return output;
 };
 
+methods.updateImStatus = async (imConfigObject, bodyData, projectKey) => {
+    try{
+        let ur = constants.JIRA_UPDATE_TRANSITION.replace("{JIRAID}", projectKey);
+        var basicToken = "Basic " + btoa(imConfigObject.imUserName + ":" + imConfigObject.imPassword);
+        const imConfig = getConfig("POST", basicToken, imConfigObject.imurl + constants.JIRA_UPDATE_TRANSITION.replace('{JIRAID}', projectKey), bodyData);
+        const result = await util.httpImCall(imConfig); 
+    }catch(err){
+        logger.error(`Failed to update ticket for Project Key - ${projectKey} and the error is ${JSON.stringify(error.response.data)}`);
+    }
+}
+
 methods.createScanTickets = async (issues, imConfigObject, applicationId, applicationName, scanId, discoveryMethod) => {
     var output = {};
     var success = [];
@@ -155,7 +166,7 @@ createPayload = async (issue, imConfigObject, applicationId, applicationName) =>
         for(var i=0; i<attributeMappings.length; i++) {
             if(attributeMappings[i].type === 'Array'){
                 if(attributeMappings[i].imAttr == 'labels'){
-                attrMap[attributeMappings[i].imAttr] = [labelName || '', applicationId];
+                attrMap[attributeMappings[i].imAttr] = [labelName || '', String(applicationId)];
                 }else if(attributeMappings[i].imAttr == 'customfield_11292'){
                     attrMap[attributeMappings[i].imAttr] = `${labelName}`
                 }else if(attributeMappings[i].imAttr == 'customfield_13096'){

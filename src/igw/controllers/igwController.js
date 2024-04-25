@@ -171,7 +171,27 @@ methods.startProviderSync = async (providerId, syncinterval) => {
     
     job.start();
     imJobsMap.set(providerId, job);
-    logger.info("Started the job for provider "+ providerId);
+    logger.info("Started the JIRA job for provider "+ providerId);
+}
+
+methods.startStatusSync = async (providerId, syncinterval) => {
+    var newDateObj = new Date();
+    var pattern = `* */1 * * *`;
+
+    var statusJob = new CronJob(
+        pattern,
+        function() {
+            startReopenendTicketCron(providerId, syncinterval);
+        },
+        null,
+        false,
+        null,
+        null,
+        true
+    );
+    
+    statusJob.start();
+    logger.info("Started the JIRA status job for provider "+ providerId);
 }
 
 methods.stopProviderSync = async (req, res) => {
@@ -258,7 +278,7 @@ startCron = async (providerId, syncinterval) => {
                 else logger.info(`Scan ${scan.id} is not associated with the application. Issues of this application cannot be pushed to Issue Management System`);        
             }else if(process.env.APPSCAN_PROVIDER == 'ASE'){
                 if (scan.applicationId){
-                    const issuesData = await pushIssuesOfScan(scan.id, scan.applicationId, token, providerId);
+                    const issuesData = await pushIssuesOfScan(scan.id, scan.applicationId,  scan.name, token, providerId);
                     if (typeof issuesData != 'undefined') output.push(issuesData);
                 } 
                 else logger.info(`Scan ${scan.id} is not associated with the application. Issues of this application cannot be pushed to Issue Management System`);        
@@ -303,6 +323,29 @@ startProviderCron = async (providerId, syncinterval) => {
     }
 }
 
+startReopenendTicketCron = async (providerId, syncinterval) => {
+    const token = await appscanLoginController();
+
+    if (typeof token === 'undefined') return;
+    if(reopenedIssues.size != 0){
+        let imConfig = await getIMConfig(providerId);
+        for(let [key, value] of reopenedIssues){
+            try{
+                let keyId = value.split('/')[4]
+                let bodyData = {
+                    "transition": {
+                        "id": "11"
+                    }
+                }
+                await updateStatusInProvider(providerId, imConfig, bodyData, keyId);
+                reopenedIssues.delete(key);
+            }catch(err){
+                logger.error(err)
+            }
+        }
+    }
+}
+
 methods.getResults = async (req, res) => {
     const providerId = process.env.IM_PROVIDER;
     const result = jobResults.get(providerId);
@@ -325,6 +368,18 @@ getIssuesOfApplication = async (applicationId, token) => {
     return issues;
 }
 
+getCommentsOfIssue = async (issueId, token) => {
+    var issues = [];
+    try {
+        const result = process.env.APPSCAN_PROVIDER == 'ASE' ? '' : await asocIssueService.getCommentsOfIssue(issueId, token);
+        if(result.code === 200) issues = result.data;        
+        else logger.error(`Failed to get comments of issue ${issueId}`);
+    } catch (error) {
+        logger.error(`Fetching comments of issue ${issueId} failed with error ${error}`);
+    }
+    return issues;
+}
+
 getIssuesOfScan = async (scanId, applicationId, token) => {
     var issues = [];
     try {
@@ -342,6 +397,15 @@ updateIssuesOfApplication = async (issueId, applicationId, status, comment, exte
         // FOR ASOC
         const token = await appscanLoginController();
         const result = await asocIssueService.updateIssuesOfApplication(issueId, status, comment, externalid, token)
+    }catch(error){
+        throw `Failed to update the status for IssueId - ${issueId} Application Id - ${applicationId} - ${error?.response?.data?.Message || error}`
+    }
+}
+
+updateStatusInProvider = async (providerId, imConfig, bodyData, projectKey) => {
+    try{
+        const result = await igwService.updateImStatus(providerId, imConfig, bodyData, projectKey)
+        logger.info(`Status Updated in ${projectKey}`)
     }catch(error){
         throw `Failed to update the status for IssueId - ${issueId} Application Id - ${applicationId} - ${error?.response?.data?.Message || error}`
     }
@@ -390,6 +454,21 @@ pushIssuesOfScan = async (scanId, applicationId, appName, token, providerId) => 
     if(process.env.APPSCAN_PROVIDER == "ASOC"){
         appIssues = appIssues.Items 
     }
+    let reOpenedIssue = appIssues.filter(issue => issue['Status'] == 'Reopened');
+    
+    reOpenedIssue.map(async res => {
+        if (res.ExternalId != '') {
+            reopenedIssues.set(res.Id, res.ExternalId);
+        } else {
+            let response = await getCommentsOfIssue(res.Id, token);
+            response.map(a => {
+                if(a.Comment.includes('appscan.atlassian')){
+                    reopenedIssues.set(res.Id, a.Comment);
+                }
+            })
+        }
+    })
+
     const scanIssues = process.env.APPSCAN_PROVIDER == 'ASE' ? appIssues.filter(issue => issue["Scan Name"].replaceAll("&#40;", "(").replaceAll("&#41;", ")").includes("("+scanId+")")) : appIssues.filter(issue => issue["ScanName"] != undefined);
     logger.info(`${appIssues.length} issues found in the scan ${scanId} and the scan is associated to the application ${applicationId}`);
     const pushedIssuesResult = await pushIssuesToIm(providerId, scanId, applicationId, appName, scanIssues, token);
@@ -461,7 +540,7 @@ pushIssuesToIm = async (providerId, scanId, applicationId, applicationName, issu
     const imTicketsResult = await createImTickets(filteredIssues, imConfig, providerId, applicationId, applicationName);
     const successArray = (typeof imTicketsResult.success === 'undefined') ? [] : imTicketsResult.success;
     let count = 0
-    if(process.env.GENERATE_SCAN_HTML_FILE_JIRA == 'true' && scanId != '' && filteredIssues.length > 0){
+    if(process.env.GENERATE_SCAN_HTML_FILE_JIRA == 'true' && scanId != '' && filteredIssues.length > 0 && process.env.APPSCAN_PROVIDER == 'ASOC'){
         let downloadPath = `./temp/${applicationId}.html`;
         let discoveryMethod = filteredIssues[0].DiscoveryMethod;
         let scanDetails = await asocIssueService.getScanDetails(scanId, token);

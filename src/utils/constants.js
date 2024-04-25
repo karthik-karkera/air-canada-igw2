@@ -30,6 +30,7 @@ var constants = {
 	ASOC_ISSUES_APPLICATION: "/api/v2/Issues/Application/{APPID}",
 	ASOC_APPLICATION_DETAILS: "/api/V2/Apps/{APPID}",
 	ASOC_ISSUE_DETAILS: "/api/V2/Issues/{ISSUEID}",
+	ASOC_ISSUE_COMMENTS: "/api/V2/Issues/{ISSUEID}/comments",
 	ASOC_UPDATE_ISSUE: "/api/V2/Issues/{ISSUEID}",
 	ASOC_CREATE_HTML_ISSUE_DETAILS: "/api/v2/Reports/Security/Scan/{SCANID}",
 	ASOC_REPORT_STATUS: "/api/V2/Reports/{REPORTID}",
@@ -65,6 +66,7 @@ var constants = {
 	JIRA_UPDATE_TICKET: "/rest/api/2/issue/{JIRAID}",
 	JIRA_LATEST_ISSUE : "/rest/api/2/search?jql=status=Done%20AND%20updated%20>=%20-{SYNCINTERVAL}&maxResults=100",
 	JIRA_LABELS_ISSUE : "/rest/api/2/search?jql=project%20=%20{PROJECTNAME}%20AND%20summary%20~%20%27found%20by%20Appscan%27&maxResults=100&startAt={SKIPVALUE}",
+	JIRA_UPDATE_TRANSITION : "/rest/api/2/issue/{JIRAID}/transitions",
 
 	INVALID_ADMIN_EMAIL: "Invalid admin email",
 	INVALID_ADMIN_PASSWORD: "Invalid admin password",
