@@ -44,8 +44,8 @@ methods.getCompletedScans = async (syncInterval, aseToken) => {
         return await aseJobService.searchJobs(queryString, aseToken);
     } else if (process.env.APPSCAN_PROVIDER == "ASOC") {
         const queryString = constants.ASOC_JOB_SEARCH;
-        logger.info(`Fetching scans completed between ${fDate} and ${tDate}`);
-        let result = await asocJobService.searchJobs(queryString, aseToken);
+        logger.info(`Fetching scans completed between ${fDate} and ${tDate}`); 
+        let result = await fetchAllData(asocJobService.searchJobs, aseToken, 200, [queryString]);
         result.data = result.data.Items.filter(a => a.LatestExecution.Status == 'Ready').filter(a => a.LatestExecution.ScanEndTime <= endDate && a.LatestExecution.ScanEndTime >= startDate);
         return result;
     }
@@ -669,5 +669,35 @@ methods.splitHtmlFile = async (downloadPath, appId) => {
         logger.error(err)
     }
 }
+
+const fetchAllData = async (serviceName, appscanToken, status, value) => {
+    let skipValue = 0;
+    let result = {};
+    try {
+        while(true){
+            try{
+                let resData = value && value.length > 0 ? await serviceName(appscanToken, skipValue, ...value) : await serviceName(appscanToken, skipValue);
+                if(resData.data.Count <= skipValue){
+                    break;
+                }
+                
+                if(resData && Object.keys(result).length == 0 && resData.code == status && resData.data.Items.length >= 0){
+                    result = resData;
+                }else if(resData && resData.code == status && resData.data.Items.length > 0){
+                    result.data.Items = [...resData?.data?.Items, ...result.data.Items]
+                }
+                if(skipValue > 15000) break;
+            }
+            catch(err){
+                logger.error(err?.response?.data.Message || err.message)
+            }
+            skipValue += 500;
+        }
+        return result;
+    } catch (error) {
+        console.error('Error fetching applications:', error);
+        throw error;
+    }
+};
 
 module.exports = methods;

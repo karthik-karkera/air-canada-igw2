@@ -16,7 +16,7 @@ startServer();
 
 if (typeof process.env.IM_PROVIDER != 'undefined' && typeof process.env.SYNC_INTERVAL != 'undefined')
   igwController.startSync(process.env.IM_PROVIDER, process.env.SYNC_INTERVAL);
-  if(process.env.IM_SYNC_INTERVAL != '0m'){
+  if(process.env.IM_SYNC_INTERVAL != '0m' && process.env.APPSCAN_PROVIDER == 'ASOC'){
     igwController.startProviderSync(process.env.IM_PROVIDER, process.env.IM_SYNC_INTERVAL)
   }
   igwController.startStatusSync(process.env.IM_PROVIDER, process.env.IM_JIRA_SYNC_INTERVAL);

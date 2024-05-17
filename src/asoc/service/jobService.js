@@ -3,13 +3,13 @@ const constants = require("../../utils/constants");
 
 var methods = {};
 
-methods.getScanJobDetails = async (jobId, token) => {
-    const url = constants.ASOC_SCAN_ISSUE_DETAILS.replace("{SCANID}", jobId);
+methods.getScanJobDetails = async (token, skipValue, jobId) => {
+    const url = constants.ASOC_SCAN_ISSUE_DETAILS.replace("{SCANID}", jobId).replace('${skipValue}', skipValue);
     return await util.httpCall("GET", token, url);
 };
 
-methods.searchJobs = async (queryString, token) => {
-    const url = queryString;
+methods.searchJobs = async (token, skipValue, queryString) => {
+    const url = queryString.replace('${skipValue}', skipValue);
     let result = await util.httpCall("GET", token, url); 
     return result;
 };
