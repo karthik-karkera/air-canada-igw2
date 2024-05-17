@@ -46,7 +46,7 @@ methods.getCompletedScans = async (syncInterval, aseToken) => {
         const queryString = constants.ASOC_JOB_SEARCH;
         logger.info(`Fetching scans completed between ${fDate} and ${tDate}`); 
         let result = await fetchAllData(asocJobService.searchJobs, aseToken, 200, [queryString]);
-        result.data = result.data.Items.filter(a => a.LatestExecution.Status == 'Ready').filter(a => a.LatestExecution.ScanEndTime <= endDate && a.LatestExecution.ScanEndTime >= startDate);
+        result.data = result.data.Items.filter(a => a?.LatestExecution?.Status == 'Ready').filter(a => a?.LatestExecution?.ScanEndTime <= endDate && a?.LatestExecution?.ScanEndTime >= startDate);
         return result;
     }
 }
