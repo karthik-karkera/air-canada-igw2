@@ -17,6 +17,9 @@ methods.createTickets = async (issues, imConfigObject, applicationId, applicatio
     var success = [];
     var failures = [];
     for (var i=0; i<issues.length; i++){
+        if(process.env.APPSCAN_PROVIDER == "ASE"){
+            issues[i].ApplicationId = applicationId;
+        }
         const imPayload = await createPayload(issues[i], imConfigObject, applicationId, applicationName); 
         try {
             var basicToken = "Basic "+btoa(imConfigObject.imUserName+":"+imConfigObject.imPassword);

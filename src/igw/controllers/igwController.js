@@ -176,7 +176,16 @@ methods.startProviderSync = async (providerId, syncinterval) => {
 
 methods.startStatusSync = async (providerId, syncinterval) => {
     var newDateObj = new Date();
-    var pattern = `* */1 * * *`;
+   
+    let match = syncinterval.match(/^(\d+)([dhms])$/); //Convert Minutes, Hours & Days to Minutes
+    if (match) {
+        const [, value, unit] = match;
+        cronPattern = value * (unit === 'd' ? 24 * 60 : unit === 'h' ? 60 : unit === 'm' ? 1 : 0);
+    }else{
+        throw `Time Format not proper. Use format ("2m", "1h", "3d")`
+    }
+
+    var pattern = `*/${cronPattern} * * * *`;
 
     var statusJob = new CronJob(
         pattern,
@@ -303,7 +312,7 @@ startProviderCron = async (providerId, syncinterval) => {
             completedScans.issues.map(async (res) => {
                 if(res.fields.summary.includes('found by AppScan')){
                 let description = JSON.parse(res.fields.description);
-                let issueId = description.Id; 
+                let issueId = process.env.APPSCAN_PROVIDER == 'ASE' ? description.id : description.Id; 
                 let applicationId = description.ApplicationId;
                 try{
                     let status = 'Fixed';
@@ -394,9 +403,13 @@ getIssuesOfScan = async (scanId, applicationId, token) => {
 
 updateIssuesOfApplication = async (issueId, applicationId, status, comment, externalid, token) => {
     try{
-        // FOR ASOC
         const token = await appscanLoginController();
-        const result = await asocIssueService.updateIssuesOfApplication(applicationId, issueId, status, comment, externalid, token)
+        let etag = ''
+        if(process.env.APPSCAN_PROVIDER == 'ASE') {
+            const issueData = await getIssueDetails(applicationId, issueId, token);
+            etag = issueData.etag
+        }
+        const result = process.env.APPSCAN_PROVIDER == 'ASOC' ? await asocIssueService.updateIssuesOfApplication(applicationId, issueId, status, comment, externalid, token) : await issueService.updateIssuesOfApplication(applicationId, issueId, status, comment, externalid, etag, token)
     }catch(error){
         throw `Failed to update the status for IssueId - ${issueId} Application Id - ${applicationId} - ${error?.response?.data?.Message || error}`
     }
@@ -455,18 +468,33 @@ pushIssuesOfScan = async (scanId, applicationId, technology, appName, token, pro
         appIssues = appIssues.Items 
     }
     let reOpenedIssue = appIssues.filter(issue => issue['Status'] == 'Reopened');
-    
     reOpenedIssue.map(async res => {
-        if (res.ExternalId != '') {
-            reopenedIssues.set(res.Id, res.ExternalId);
-        } else {
-            let response = await getCommentsOfIssue(res.Id, token);
-            if(response.Items && response.Items.length > 0){
-                response?.Items.map(a => {
-                    if(a.Comment.includes('appscan.atlassian')){
-                        reopenedIssues.set(res.Id, a.Comment);
-                    }
-                })
+        if (process.env.IM_JIRA_SYNC_INTERVAL == 'ASOC') {
+            if (res.ExternalId != '') {
+                reopenedIssues.set(res.Id, res.ExternalId);
+            } else {
+                let response = await getCommentsOfIssue(res.Id, token);
+                if (response.Items && response.Items.length > 0) {
+                    response?.Items.map(a => {
+                        if (a.Comment.includes('appscan.atlassian')) {
+                            reopenedIssues.set(res.Id, a.Comment);
+                        }
+                    })
+                }
+            }
+        }else{
+            if (res['External ID'] != '' && res['External ID'] != undefined) {
+                reopenedIssues.set(res.id, res['External ID']);
+            } else {
+                let response = res.Comments == undefined ? '' : res.Comments.replace(/&#34;/g, '\"');
+
+                if (response && response.length > 0) {
+                    response.map(a => {
+                        if (a.comment.includes('appscan.atlassian')) {
+                            reopenedIssues.set(res.id, a.comment);
+                        }
+                    })
+                }
             }
         }
     })
@@ -529,7 +557,7 @@ pushIssuesToIm = async (providerId, scanId, applicationId, applicationName, issu
     var imConfig = await getIMConfig(providerId);
     if(typeof imConfig === 'undefined') return;
     const filteredIssues = await igwService.filterIssues(issues, imConfig);
-
+    
     if(process.env.APPSCAN_PROVIDER == "ASOC" && filteredIssues.length > 0 && process.env.GENERATE_HTML_FILE_JIRA == "true"){
         try{
             await asocIssueService.downloadAsocReport(providerId, applicationId, scanId, issues, token)
@@ -675,6 +703,7 @@ updateExternalId = async (applicationId, issueId, ticket, token) => {
     data["appReleaseId"] = applicationId;
     var attributeArray = [];
     var attribute = {};
+    var attribute1 = {};
     attribute["name"] = "External Id";
     attribute["value"] = [ticket];
     attributeArray.push(attribute);
@@ -686,6 +715,10 @@ updateExternalId = async (applicationId, issueId, ticket, token) => {
         data["Status"] = issueData.Status == 'New' ? 'Open' : issueData.Status;
         data["ExternalId"] = ticket;
         data['Comment'] = ticket
+    }else{
+        attribute1["name"] = "Comments";
+        attribute1["value"] = [ticket];
+        attributeArray.push(attribute1);
     }
     await delay(3000);
     const isSuccess = await updateIssueAttribute(applicationId, issueId, data, token, issueData.etag);

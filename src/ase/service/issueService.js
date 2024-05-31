@@ -1,3 +1,5 @@
+const log4js = require("log4js");
+const logger = log4js.getLogger("issueService");
 const util = require("../../utils/util");
 const constants = require("../../utils/constants");
 
@@ -42,5 +44,19 @@ methods.getHTMLIssueDetails = async(appId, issueId, downloadPath, token) => {
     const url = constants.ASE_GET_HTML_ISSUE_DETAILS.replace("{ISSUEID}", issueId).replace("{APPID}", appId);
     return await util.downloadFile(url, downloadPath, token);
 }
+
+methods.updateIssuesOfApplication = async (appId, issueId, status, comment, externalId, etag, token) => {
+    try{
+        const url = constants.ASE_UPDATE_ISSUE.replace("{ISSUEID}", issueId);
+        let data = {
+            "lastUpdated" : Date.now(),
+            "appReleaseId": appId,
+            "attributeCollection" : { "attributeArray" : [ { "name": 'Status', "value": [status] }, { "name": 'Comments', "value": ["Fixed on Jira"] } ]}
+        }
+        return await util.httpCall("PUT", token, url, JSON.stringify(data), etag);
+    }catch(err){
+        logger.error(err.response.data)
+    }
+};
 
 module.exports = methods;
