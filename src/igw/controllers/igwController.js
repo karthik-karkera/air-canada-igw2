@@ -407,7 +407,7 @@ updateIssuesOfApplication = async (issueId, applicationId, status, comment, exte
         let etag = ''
         if(process.env.APPSCAN_PROVIDER == 'ASE') {
             const issueData = await getIssueDetails(applicationId, issueId, token);
-            etag = issueData.etag
+            etag = issueData.etag;
         }
         const result = process.env.APPSCAN_PROVIDER == 'ASOC' ? await asocIssueService.updateIssuesOfApplication(applicationId, issueId, status, comment, externalid, token) : await issueService.updateIssuesOfApplication(applicationId, issueId, status, comment, externalid, etag, token)
     }catch(error){
@@ -469,7 +469,7 @@ pushIssuesOfScan = async (scanId, applicationId, technology, appName, token, pro
     }
     let reOpenedIssue = appIssues.filter(issue => issue['Status'] == 'Reopened');
     reOpenedIssue.map(async res => {
-        if (process.env.IM_JIRA_SYNC_INTERVAL == 'ASOC') {
+        if (process.env.APPSCAN_PROVIDER == 'ASOC') {
             if (res.ExternalId != '') {
                 reopenedIssues.set(res.Id, res.ExternalId);
             } else {
@@ -485,16 +485,6 @@ pushIssuesOfScan = async (scanId, applicationId, technology, appName, token, pro
         }else{
             if (res['External ID'] != '' && res['External ID'] != undefined) {
                 reopenedIssues.set(res.id, res['External ID']);
-            } else {
-                let response = res.Comments == undefined ? '' : res.Comments.replace(/&#34;/g, '\"');
-
-                if (response && response.length > 0) {
-                    response.map(a => {
-                        if (a.comment.includes('appscan.atlassian')) {
-                            reopenedIssues.set(res.id, a.comment);
-                        }
-                    })
-                }
             }
         }
     })
@@ -573,7 +563,7 @@ pushIssuesToIm = async (providerId, scanId, applicationId, applicationName, issu
     if(process.env.GENERATE_SCAN_HTML_FILE_JIRA == 'true' && scanId != '' && filteredIssues.length > 0 && process.env.APPSCAN_PROVIDER == 'ASOC'){
         let downloadPath = `./temp/${applicationId}.html`;
         let discoveryMethod = filteredIssues[0].DiscoveryMethod;
-        let scanDetails = await asocIssueService.getScanDetails(scanId, technology, token);
+        let scanDetails = process.env.APPSCAN_PROVIDER == 'ASE' ? await jobService.getScanJobDetails(scanId, token) : await asocIssueService.getScanDetails(scanId, technology, token);
         if (scanDetails.code === 200 && scanDetails.data !=='undefined') 
             scanDetails = scanDetails.data;
         else
