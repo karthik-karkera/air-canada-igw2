@@ -117,7 +117,6 @@ methods.downloadAsocReport = async (providerId, appId, scanId, issues, token) =>
                         let getDownloadUrl = await util.httpCall("GET", token, getReportStatusUrl);
                         getDownloadUrl?.data?.Items.map(async res => {
                             if (res.Status == 'Ready' && res.Id == reportID) {
-                                console.log('Inside', token)
                                 let downloadFileData = await util.downloadFile(getDownloadReportsUrl, downloadPath, token);
                                 if (downloadFileData) {
                                     let res = await igwService.splitHtmlFile(downloadPath, appId)
