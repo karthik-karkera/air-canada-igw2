@@ -846,7 +846,7 @@ methods.labelsSync = async (req, res) => {
 
 const fetchAllData = async (serviceName, appscanToken, status, value) => {
     let skipValue = 0;
-    let result = {};
+    let result = { code: status, data: { Items: [] } }
     try {
         while(true){
             try{
